@@ -43,7 +43,7 @@ jobs:
           ADMIN_PASSWORD_HASH: test-only-placeholder
           SITE_ADDRESS: localhost
         run: |
-          bash -n scripts/backup.sh scripts/deploy.sh scripts/check-deploy-time.sh scripts/run-scheduled-deploy.sh ops/ssh-deploy.sh ops/bootstrap-vps.sh
+          bash -n scripts/verify-release.sh scripts/backup.sh scripts/deploy.sh scripts/check-deploy-time.sh scripts/run-scheduled-deploy.sh ops/ssh-deploy.sh ops/bootstrap-vps.sh
           docker compose config --quiet
           docker run --rm -e SITE_ADDRESS=:80 -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2.10.2-alpine caddy validate --config /etc/caddy/Caddyfile
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
