@@ -13,8 +13,8 @@
     "test:e2e": "tsx scripts/e2e.ts",
     "build": "vite build",
     "check": "npm run lint && npm run typecheck && npm run test:coverage",
-    "format": "prettier --write src server contracts tests scripts *.ts *.json *.js .github/workflows/*.yml",
-    "format:check": "prettier --check src server contracts tests scripts *.ts *.json *.js .github/workflows/*.yml",
+    "format": "prettier --write src server contracts tests scripts *.ts *.json *.js index.html .github/workflows/*.yml",
+    "format:check": "prettier --check src server contracts tests scripts *.ts *.json *.js index.html .github/workflows/*.yml",
     "setup:local": "tsx scripts/create-env.ts",
     "verify:compile": "vite build --mode test --outDir .preview"
   },

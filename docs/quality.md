@@ -21,7 +21,7 @@ Coverage измеряется V8 (Vitest 5.1.0), включает все авт�
 CI с ошибкой. Неуспешные/cancelled/skipped checks отклоняются quality-gate.
 Скрывающих ошибок continue-on-error и workflow paths filter нет.
 
-Локально прошли unit/integration/component tests и четыре Cypress E2E:
+Локально прошли unit/integration/component tests и шесть Cypress E2E:
 навигация/каталог; темы и мобильное меню; CRUD/публикация событий; загрузка,
 отображение, удаление медиа и проверка авторизации. Смена темы и адаптация
 также проверены в открытом локальном OpenDesign. Макеты OpenDesign статические;
@@ -33,10 +33,15 @@ CI с ошибкой. Неуспешные/cancelled/skipped checks отклон
 
 ## Измерено локально
 
-29 unit/integration/component tests, 4 Cypress tests — passed.
+33 unit/integration/component tests, 6 Cypress tests — passed.
 
 | Область | Lines | Branches |
 | --- | --- | --- |
-| src | 100.0% | 97.06% |
+| src | 99.45% | 97.25% |
 | server | 99.35% | 95.12% |
-| contracts | 100.0% | N/A |
+| contracts | 100.00% | N/A |
+
+Дополнительные проверки: логотип на стартовом экране до готовности API,
+биография с источниками, дата Москвы на границе UTC/нового года, обновление
+даты при возвращении фокуса/переходе через полночь, отдельные today/selected
+и кнопка «Сегодня».

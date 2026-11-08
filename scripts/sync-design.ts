@@ -20,4 +20,4 @@ for (const name of await readdir("design")) {
   if (!response.ok)
     throw new Error(`OpenDesign write ${name}: ${response.status}`);
 }
-console.log("OpenDesign: 12 layouts updated.");
+console.log("OpenDesign: 13 layouts updated.");

@@ -9,6 +9,7 @@ const css = await readFile(
   `.preview/assets/${files.find((f) => f.endsWith(".css"))}`,
   "utf8",
 );
+const logo = (await readFile("public/logo.png")).toString("base64");
 const svg = Buffer.from(await readFile("public/north.svg")).toString("base64");
 await mkdir("design", { recursive: true });
 const pages = [
@@ -49,6 +50,9 @@ for (const theme of ["dark", "light"])
       'href="/north.svg"',
       `href="data:image/svg+xml;base64,${svg}"`,
     );
+    markup = markup
+      .replaceAll('src="/logo.png"', `src="data:image/png;base64,${logo}"`)
+      .replaceAll('href="/logo.png"', `href="data:image/png;base64,${logo}"`);
     for (const [target, url] of pages)
       markup = markup.replaceAll(
         `href="${url}"`,
@@ -61,4 +65,21 @@ for (const theme of ["dark", "light"])
       `<!doctype html><html lang="ru" data-theme="${theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Северный человек · ${name} · ${theme}</title><style>${css}</style></head><body>${markup}<script>${script}</script></body></html>`,
     );
   }
-console.log("12 responsive OpenDesign layouts generated.");
+const entry = await readFile("index.html", "utf8");
+const bootStyles = entry.match(/<style>([\s\S]*?)<\/style>/)![1];
+const splash = entry
+  .match(/<div\s+id="boot-splash"[\s\S]*?<\/div>/)![0]
+  .replace('src="/logo.png"', `src="data:image/png;base64,${logo}"`);
+await writeFile(
+  "design/loading.html",
+  `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Северный человек · загрузка</title><style>${bootStyles}</style></head><body>${splash}</body></html>`,
+);
+const config = JSON.parse(await readFile("design/opendesign.json", "utf8"));
+config.files = (await readdir("design"))
+  .filter((file) => file.endsWith(".html"))
+  .sort();
+await writeFile(
+  "design/opendesign.json",
+  JSON.stringify(config, null, 2) + "\n",
+);
+console.log("13 responsive OpenDesign layouts generated.");

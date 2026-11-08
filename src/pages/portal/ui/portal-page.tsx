@@ -1,3 +1,7 @@
+import {
+  getMoscowDate,
+  useMoscowToday,
+} from "../../../shared/lib/calendar-date";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -46,10 +50,11 @@ export function PortalPage() {
   });
   const [search, setSearch] = useState("");
   const [mediaType, setMediaType] = useState("all");
+  const today = useMoscowToday();
   const [month, setMonth] = useState(
-    () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    () => new Date(today.year, today.month, 1),
   );
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [selectedDay, setSelectedDay] = useState<number | null>(today.day);
   const isHome = path === "/";
   const title =
     path === "/media"
@@ -64,17 +69,12 @@ export function PortalPage() {
   );
   const monthEvents =
     data?.events.filter((e) => {
-      const d = new Date(new Date(e.startsAt).getTime() + 3 * 3600000);
-      return (
-        d.getUTCFullYear() === month.getFullYear() &&
-        d.getUTCMonth() === month.getMonth()
-      );
+      const d = getMoscowDate(new Date(e.startsAt));
+      return d.year === month.getFullYear() && d.month === month.getMonth();
     }) ?? [];
   const events = monthEvents.filter(
     (e) =>
-      !selectedDay ||
-      new Date(new Date(e.startsAt).getTime() + 3 * 3600000).getUTCDate() ===
-        selectedDay,
+      !selectedDay || getMoscowDate(new Date(e.startsAt)).day === selectedDay,
   );
   const status = (
     <>
@@ -170,6 +170,76 @@ export function PortalPage() {
               <ArrowUpRight />
             </Link>
           </div>
+          <section
+            className="founder-section"
+            id="founder"
+            aria-labelledby="founder-title"
+          >
+            <div className="founder-profile">
+              <p className="eyebrow">ОСНОВАТЕЛЬ ОБЪЕДИНЕНИЯ</p>
+              <h2 id="founder-title" aria-label="Михаил Маваши">
+                Михаил
+                <br />
+                <span>Маваши</span>
+              </h2>
+              <p className="founder-years">1985 — 2026</p>
+              <p className="founder-fullname">Михаил Фёдорович Ниц</p>
+              <p className="founder-role">
+                Музыкант, автор песен и основатель «Северного человека».
+              </p>
+            </div>
+            <div className="founder-story">
+              <h3>От музыки — к объединению</h3>
+              <p>
+                Михаил Маваши родился в 1985 году в Кустанае, в Казахской ССР. В
+                юности занимался единоборствами, получил юридическое образование
+                в Челябинске. Псевдоним «Маваши» связан с названием кругового
+                удара ногой в боевых искусствах.
+              </p>
+              <p>
+                Музыкальную карьеру начал в конце 2000-х. В его песнях
+                появлялись темы спорта, личной дисциплины и повседневной жизни.
+                Позднее он перешёл от сольного рэпа к работе с рок-коллективом
+                «МАВАШИ group».
+              </p>
+              <ol className="founder-timeline">
+                <li>
+                  <span>2009</span>
+                  <p>Первый альбом — «Только правда».</p>
+                </li>
+                <li>
+                  <span>2018</span>
+                  <p>Создание музыкального коллектива «МАВАШИ group».</p>
+                </li>
+                <li>
+                  <span>2022</span>
+                  <p>Основание объединения «Северный человек».</p>
+                </li>
+              </ol>
+              <p>
+                25 октября 2026 года Михаил Маваши умер в Воронеже. Об этом
+                сообщили в его официальном канале; информацию подтвердили
+                информационные агентства.
+              </p>
+              <p className="biography-sources">
+                Источники:{" "}
+                <a
+                  href="https://www.rbc.ru/person/6addccc77ed5c3f0602233c7"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  биография РБК <ArrowUpRight size={12} />
+                </a>
+                <a
+                  href="https://m.interfax.ru/1124863"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Интерфакс <ArrowUpRight size={12} />
+                </a>
+              </p>
+            </div>
+          </section>
           <section className="section">
             <div className="section-heading">
               <div>
@@ -359,6 +429,30 @@ export function PortalPage() {
               {status}
               <div className="calendar-layout">
                 <section className="calendar">
+                  <div className="calendar-today-bar">
+                    <p>
+                      <span className="status-dot" />
+                      Сегодня,{" "}
+                      {new Date(
+                        today.year,
+                        today.month,
+                        today.day,
+                      ).toLocaleDateString("ru", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </p>
+                    <button
+                      className="button"
+                      onClick={() => {
+                        setMonth(new Date(today.year, today.month, 1));
+                        setSelectedDay(today.day);
+                      }}
+                    >
+                      Сегодня
+                    </button>
+                  </div>
                   <div className="calendar-toolbar">
                     <h2>
                       {month.toLocaleDateString("ru", {
@@ -419,6 +513,10 @@ export function PortalPage() {
                       },
                       (_, i) => {
                         const day = i + 1;
+                        const isToday =
+                          day === today.day &&
+                          month.getMonth() === today.month &&
+                          month.getFullYear() === today.year;
                         const hasEvent = monthEvents.some(
                           (e) =>
                             new Date(
@@ -428,7 +526,12 @@ export function PortalPage() {
                         return (
                           <button
                             key={day}
-                            className={selectedDay === day ? "selected" : ""}
+                            className={[
+                              selectedDay === day ? "selected" : "",
+                              isToday ? "today" : "",
+                            ].join(" ")}
+                            aria-current={isToday ? "date" : undefined}
+                            title={isToday ? "Сегодня" : undefined}
                             aria-pressed={selectedDay === day}
                             onClick={() =>
                               setSelectedDay(selectedDay === day ? null : day)
@@ -445,7 +548,14 @@ export function PortalPage() {
                 <section className="event-list">
                   <p className="eyebrow">
                     {selectedDay
-                      ? `${selectedDay} ${month.toLocaleDateString("ru", { month: "long" })}`
+                      ? new Date(
+                          month.getFullYear(),
+                          month.getMonth(),
+                          selectedDay,
+                        ).toLocaleDateString("ru", {
+                          day: "numeric",
+                          month: "long",
+                        })
                       : "СОБЫТИЯ МЕСЯЦА"}
                   </p>
                   {events.map((e) => (

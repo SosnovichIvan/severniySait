@@ -168,7 +168,6 @@ describe("public UI", () => {
     mockApi();
     const user = userEvent.setup();
     mount(<PortalPage />, "/calendar");
-    expect(screen.getByText(event.title)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "15" }));
     expect(screen.getByText(event.title)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "16" }));
@@ -430,4 +429,34 @@ it("supports Escape on delete confirmation", async () => {
     new Event("cancel", { bubbles: true, cancelable: true }),
   );
   expect(screen.queryByRole("alertdialog")).toBeNull();
+});
+
+it("keeps the logo splash until initial content settles", async () => {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => {
+      await gate;
+      return { ok: true, json: async () => content };
+    }),
+  );
+  const splash = document.createElement("div");
+  splash.id = "boot-splash";
+  document.body.append(splash);
+  mount(<App />, "/", null);
+  expect(document.getElementById("boot-splash")).toBe(splash);
+  release();
+  await waitFor(() =>
+    expect(document.getElementById("boot-splash")).toBeNull(),
+  );
+  expect(
+    screen.getByRole("heading", { name: "Михаил Маваши" }),
+  ).toBeInTheDocument();
+  expect(document.querySelector(".brand-logo")).toHaveAttribute(
+    "src",
+    "/logo.png",
+  );
 });

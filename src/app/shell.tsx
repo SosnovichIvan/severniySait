@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+import { loadContent } from "../shared/api";
 import { useEffect, useState } from "react";
 import { Link, NavLink, Routes, Route, useLocation } from "react-router-dom";
 import { Sun, Moon, Menu, X, ArrowUpRight } from "lucide-react";
@@ -11,6 +13,13 @@ const links = [
   ["/links", "Медиапространство"],
 ];
 export function App() {
+  const boot = useQuery({
+    queryKey: ["content"],
+    queryFn: () => loadContent(),
+  });
+  useEffect(() => {
+    if (!boot.isPending) document.getElementById("boot-splash")?.remove();
+  }, [boot.isPending]);
   const [dark, setDark] = useState(
     () => localStorage.getItem("theme") !== "light",
   );
@@ -36,9 +45,15 @@ export function App() {
             to="/"
             aria-label="Северный человек — главная"
           >
-            <span className="brand-mark">
-              С<span>Ч</span>
-            </span>
+            <img
+              className="brand-logo"
+              src="/logo.png"
+              width="64"
+              height="72"
+              alt=""
+              aria-hidden="true"
+            />
+
             <span>
               СЕВЕРНЫЙ
               <br />
