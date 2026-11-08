@@ -1,0 +1,10 @@
+[Unit]
+Description=Check the portal update schedule every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+Persistent=true
+Unit=severniy-update.service
+
+[Install]
+WantedBy=timers.target

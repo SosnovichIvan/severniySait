@@ -1995,3 +1995,26 @@ label small {
   align-items: center;
   gap: 12px;
 }
+
+.updates-editor > p {
+  margin-bottom: 24px;
+  max-width: 780px;
+}
+.updates-editor h3 {
+  font-size: 24px;
+  margin-bottom: 24px;
+}
+.updates-editor .section-heading {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.updates-editor .section-heading > span {
+  color: var(--muted);
+  font-size: 14px;
+}
+.update-local-note {
+  border-left: 3px solid var(--accent);
+  padding: 16px 20px;
+  background: var(--surface);
+  border-radius: 0 16px 16px 0;
+}

@@ -177,3 +177,21 @@ describe('Editorial workspace and channels',()=>{
   row().find('[aria-label="Удалить Тестовый канал"]').click();cy.get('dialog[role=alertdialog]').contains('button','Удалить').click();row().should('not.exist');
  });
 });
+
+describe('Explicit site update schedule',()=>{
+ it('adds the update tab, saves a chosen time and cancels without stopping the public site',()=>{
+  cy.visit('/admin');cy.get('input[type=password]').type('e2e-password');cy.get('dialog').contains('button','Войти').click();
+  cy.get('.tabs').contains('button','Обновление сайта').click();cy.location('search').should('contain','section=updates');
+  cy.contains('Локальный режим');cy.contains('label','Версия обновления').find('input').type('1.2.3');
+  const selected=new Date(Date.now()+8*60000+3*3600000).toISOString().slice(0,16);
+  cy.contains('label','Дата и время обновления (МСК)').find('input').type(selected);
+  cy.contains('button','Запланировать обновление').click();cy.contains('[role=status]','Обновление запланировано');cy.contains('.publication','Запланировано');
+  cy.reload();cy.contains('h2','Обновление сайта');cy.contains('.publication','Запланировано');
+  cy.viewport(1280,900);cy.screenshot('admin-updates-dark-desktop',{capture:'fullPage'});
+  cy.get('[aria-label="Включить светлую тему"]').click();cy.screenshot('admin-updates-light-desktop',{capture:'fullPage'});
+  cy.viewport(390,844);cy.document().then(d=>expect(d.documentElement.scrollWidth).to.be.at.most(390));cy.screenshot('admin-updates-light-mobile',{capture:'fullPage'});
+  cy.get('[aria-label="Включить тёмную тему"]').click();cy.screenshot('admin-updates-dark-mobile',{capture:'fullPage'});
+  cy.contains('button','Отменить обновление').click();cy.contains('.publication','Отменено');
+  cy.visit('/');cy.contains('h1','Северный');cy.request('/api/health').its('status').should('eq',200);
+ });
+});

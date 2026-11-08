@@ -6,6 +6,10 @@ on:
         description: Published immutable version (e.g. 0.1.0)
         required: true
         type: string
+      scheduled_at:
+        description: "Explicit update time in UTC (e.g. 2026-12-01T00:00:00Z); launch within 10 minutes"
+        required: true
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -23,9 +27,11 @@ jobs:
           persist-credentials: false
       - name: Verify release on main
         env:
+          SCHEDULED_AT: ${{ inputs.scheduled_at }}
           VERSION: ${{ inputs.version }}
           GH_TOKEN: ${{ github.token }}
         run: |
+          ./scripts/check-deploy-time.sh "$SCHEDULED_AT"
           test "$GITHUB_REF" = refs/heads/main
           [[ "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
           git fetch origin main --tags
@@ -33,6 +39,7 @@ jobs:
           git merge-base --is-ancestor "refs/tags/$VERSION" origin/main
       - name: Deploy using restricted SSH access
         env:
+          SCHEDULED_AT: ${{ inputs.scheduled_at }}
           VERSION: ${{ inputs.version }}
           DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
           DEPLOY_USER: ${{ vars.DEPLOY_USER }}
@@ -40,6 +47,7 @@ jobs:
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
         run: |
+          ./scripts/check-deploy-time.sh "$SCHEDULED_AT"
           test -n "$SSH_KEY" && test -n "$KNOWN_HOSTS"
           [[ "$DEPLOY_HOST" =~ ^[a-zA-Z0-9.-]+$ ]]
           [[ "$DEPLOY_USER" =~ ^[a-zA-Z0-9_-]+$ ]]
@@ -49,4 +57,4 @@ jobs:
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
           trap 'rm -f ~/.ssh/deploy_key' EXIT
-          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "'$DEPLOY_PATH/scripts/deploy.sh' '$VERSION'"
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "'$DEPLOY_PATH/scripts/deploy.sh' '$VERSION' '$SCHEDULED_AT'"

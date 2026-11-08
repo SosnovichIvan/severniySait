@@ -58,6 +58,7 @@ jobs:
           done
           test "$state" = healthy
           docker exec release-smoke node -e "fetch('http://127.0.0.1:3001/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+          docker exec release-smoke node --import tsx scripts/deployment-queue.ts claim
       - name: Publish verified image
         env:
           TAG: ${{ github.ref_name }}

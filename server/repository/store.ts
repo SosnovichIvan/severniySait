@@ -9,6 +9,7 @@ import type {
   DivisionLink,
   ChannelRecord,
   PublicationKind,
+  DeploymentRecord,
 } from "../../contracts/content.js";
 export class Store {
   db: Database.Database;
@@ -58,7 +59,80 @@ export class Store {
         for (const channel of defaultChannels)
           this.saveChannel(channel, channel.id);
       }
+      this.db.exec(`CREATE TABLE IF NOT EXISTS deployments(
+        id TEXT PRIMARY KEY, version TEXT NOT NULL, scheduledAt TEXT NOT NULL, createdAt TEXT NOT NULL,
+        status TEXT NOT NULL CHECK(status IN ('scheduled','running','succeeded','failed','cancelled')), detail TEXT NOT NULL DEFAULT '');
+        CREATE UNIQUE INDEX IF NOT EXISTS deployments_active ON deployments((1)) WHERE status IN ('scheduled','running');
+        INSERT OR IGNORE INTO migrations VALUES(7);`);
     })();
+  }
+  deployments() {
+    return this.db
+      .prepare(
+        "SELECT * FROM deployments ORDER BY createdAt DESC,rowid DESC LIMIT 50",
+      )
+      .all() as DeploymentRecord[];
+  }
+  scheduleDeployment(version: string, scheduledAt: string, now: string) {
+    return this.db
+      .transaction(() => {
+        if (
+          this.db
+            .prepare(
+              "SELECT 1 FROM deployments WHERE status IN ('scheduled','running')",
+            )
+            .get()
+        )
+          return null;
+        const id = randomUUID();
+        this.db
+          .prepare(
+            "INSERT INTO deployments(id,version,scheduledAt,createdAt,status) VALUES(?,?,?,?,'scheduled')",
+          )
+          .run(id, version, scheduledAt, now);
+        return id;
+      })
+      .immediate();
+  }
+  cancelDeployment(id: string) {
+    return this.db
+      .prepare(
+        "UPDATE deployments SET status='cancelled' WHERE id=? AND status='scheduled'",
+      )
+      .run(id).changes;
+  }
+  claimDeployment(now: string) {
+    return this.db
+      .transaction(() => {
+        const cutoff = new Date(
+          new Date(now).getTime() - 10 * 60000,
+        ).toISOString();
+        this.db
+          .prepare(
+            "UPDATE deployments SET status='failed',detail='Время запуска пропущено. Назначьте обновление заново.' WHERE status='scheduled' AND scheduledAt < ?",
+          )
+          .run(cutoff);
+        return this.db
+          .prepare(
+            "UPDATE deployments SET status='running' WHERE id=(SELECT id FROM deployments WHERE status='scheduled' AND scheduledAt<=? ORDER BY scheduledAt LIMIT 1) RETURNING *",
+          )
+          .get(now) as DeploymentRecord | undefined;
+      })
+      .immediate();
+  }
+  finishDeployment(id: string, status: "succeeded" | "failed", detail: string) {
+    return this.db
+      .prepare(
+        "UPDATE deployments SET status=?,detail=? WHERE id=? AND status='running'",
+      )
+      .run(status, detail, id).changes;
+  }
+  recoverDeployments() {
+    return this.db
+      .prepare(
+        "UPDATE deployments SET status='failed',detail='Исполнитель прервался. Проверьте сайт и назначьте обновление заново.' WHERE status='running'",
+      )
+      .run().changes;
   }
   list(admin = false) {
     const events = this.db

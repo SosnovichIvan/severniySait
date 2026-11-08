@@ -77,3 +77,22 @@ export const contentSchema = z.object({
 export type EventRecord = z.infer<typeof eventSchema>;
 export type MediaRecord = z.infer<typeof mediaSchema>;
 export type Content = z.infer<typeof contentSchema>;
+export const deploymentVersion = z
+  .string()
+  .regex(/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/);
+export const deploymentInput = z.object({
+  version: deploymentVersion,
+  scheduledAt: z.iso.datetime({ offset: true }),
+});
+export const deploymentSchema = deploymentInput.extend({
+  id: z.string(),
+  createdAt: z.string(),
+  status: z.enum(["scheduled", "running", "succeeded", "failed", "cancelled"]),
+  detail: z.string(),
+});
+export type DeploymentRecord = z.infer<typeof deploymentSchema>;
+export const deploymentsSchema = z.object({
+  enabled: z.boolean(),
+  currentVersion: z.string(),
+  jobs: z.array(deploymentSchema),
+});

@@ -4,4 +4,16 @@
     max_size 32MB
   }
   reverse_proxy app:3001
+  handle_errors 502 503 504 {
+    header Retry-After 60
+    header Cache-Control "no-store"
+    @api path /api/*
+    handle @api {
+      header Content-Type application/json
+      respond `{"error":"Идёт обновление сайта. Повторите действие через несколько минут."}` 503
+    }
+    handle {
+      respond "Идёт обновление сайта. Пожалуйста, вернитесь через несколько минут." 503
+    }
+  }
 }

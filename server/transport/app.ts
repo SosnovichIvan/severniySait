@@ -15,6 +15,7 @@ import {
   channelInput,
   publicationInput,
   publicationKind,
+  deploymentInput,
 } from "../../contracts/content.js";
 import { Store } from "../repository/store.js";
 import { SqliteSessions } from "../repository/session-store.js";
@@ -25,6 +26,8 @@ export type AppOptions = {
   sessionSecret: string;
   passwordHash: string;
   production?: boolean;
+  deploymentEnabled?: boolean;
+  currentVersion?: string;
 };
 export function createApp(options: AppOptions) {
   const app = express();
@@ -119,6 +122,38 @@ export function createApp(options: AppOptions) {
   app.get("/api/admin/content", (_req, res) =>
     res.json(options.store.list(true)),
   );
+  app.get("/api/admin/deployments", (_req, res) =>
+    res.json({
+      enabled: !!options.deploymentEnabled,
+      currentVersion: options.currentVersion ?? "local",
+      jobs: options.store.deployments(),
+    }),
+  );
+  app.post("/api/admin/deployments", (req, res) => {
+    const input = deploymentInput.parse(req.body);
+    const now = new Date();
+    if (new Date(input.scheduledAt).getTime() < now.getTime() + 60000)
+      return res
+        .status(400)
+        .json({ error: "Выберите время минимум на минуту позже текущего." });
+    const id = options.store.scheduleDeployment(
+      input.version,
+      new Date(input.scheduledAt).toISOString(),
+      now.toISOString(),
+    );
+    if (!id)
+      return res
+        .status(409)
+        .json({ error: "Сначала отмените или дождитесь текущего обновления." });
+    res.status(201).json({ id });
+  });
+  app.delete("/api/admin/deployments/:id", (req, res) => {
+    if (!options.store.cancelDeployment(req.params.id))
+      return res
+        .status(409)
+        .json({ error: "Можно отменить только запланированное обновление." });
+    res.json({ ok: true });
+  });
   app.patch("/api/admin/:kind/:id/publication", (req, res) => {
     const kind = publicationKind.parse(req.params.kind);
     const { published } = publicationInput.parse(req.body);

@@ -150,3 +150,41 @@ OpenDesign обновлён: 39 макетов, включая отдельны�
 - Действующий пароль не найден в отслеживаемых файлах и истории Git. `.env`
   и `.local-admin-password` игнорируются и имеют права 0600. В репозитории
   только пустой шаблон настроек и синтетические пароли из изолированных тестов.
+
+## Расписание обновлений · 08.11.2026
+
+Публикация контента проверена 60 параллельными запросами публикации/чтения:
+все ответы 200, процесс API не останавливается. Обновление кода с одним app
+перезапускает контейнер; обещания непрерывной доступности нет. Добавлены
+расписание с явной датой администратора, отмена и статусы, миграция 7.
+
+Матрица нового компонента:
+
+| Компонент | Проверки | Gate / фактический статус |
+| --- | --- | --- |
+| Admin updates UI/API | npm run check, npm run test:e2e | quality-gate, локально verified |
+| Store/queue command | SQLite, claim/cancel/finish/recover, пропущенное время/повтор/конфликт | test:coverage, verified |
+| scripts/deployment-queue.ts в runtime | docker exec release-smoke ... claim | release smoke до push образа; локальная релизная сборка не выполнялась |
+| Host runner/deploy/time guard | bash -n, Vitest subprocess с подменой Docker/date, отказ после долгого pull, фиксация успеха/ошибки | quality-gate, локально verified; реальный VPS not_connected |
+| Caddy fallback | docker compose config, caddy validate; отдельный контейнер без upstream | CI validation; локально 503 + Retry-After:60, /api JSON verified |
+| GNU date / flock | изолированный Linux контейнер, блокировка раннего старта и второго deploy | локально verified |
+| systemd service/timer | файлы для VPS, Docker socket не монтируется в app | установка/таймер на реальном VPS not_verified |
+
+`npm run check`: 68 тестов Vitest 5.1.0/V8, 13 файлов, пороги не менялись.
+Frontend 98.65% строк / 94.37% ветвей, backend 99.64% / 97.40%, contracts
+100% / 100%. Include по всем src/server/contracts; exclusions не менялись.
+Нового независимого runtime-сервиса в контейнере нет: queue command использует
+тот же Store и покрывается backend; внешние shell subprocess проверены отдельно.
+Для shell integration с несколькими десятками процессов задан локальный лимит
+15 секунд; общий timeout тестов не увеличен. Достоверный diff coverage N/A.
+
+Cypress: 12 сценариев с реальным API и временной SQLite, включая выбор МСК
+времени, сохранение после reload, отмену и доступность главной после назначения.
+Снимки новой вкладки: desktop 1280 и mobile 390 в двух темах, без overflow.
+`format:check`, TypeScript/FSD/ESLint, verify:compile, bash -n, actionlint,
+Docker Compose config и проверка Caddy прошли. OpenDesign: 77 макетов.
+
+Очередь и ручной deploy не допускают старт раньше назначенного времени или
+позже 10-минутного допуска. Это ограничение времени запуска, не гарантия времени
+восстановления. Реальные длительность/нагрузка на VPS, установка systemd,
+обновление опубликованным образом и recovery пока не проверялись и не запускались.

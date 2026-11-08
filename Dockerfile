@@ -15,6 +15,7 @@ COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/server ./server
 COPY --from=build --chown=node:node /app/contracts ./contracts
+COPY --from=build --chown=node:node /app/scripts/deployment-queue.ts ./scripts/deployment-queue.ts
 COPY --from=build --chown=node:node /app/package.json ./package.json
 RUN mkdir -p data uploads && chown node:node data uploads
 USER node

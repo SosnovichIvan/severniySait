@@ -1,0 +1,10 @@
+[Unit]
+Description=Run an explicitly scheduled Severniy portal update
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/severniySait
+ExecStart=/opt/severniySait/scripts/run-scheduled-deploy.sh
+TimeoutStartSec=12min

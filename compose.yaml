@@ -4,6 +4,8 @@ services:
     restart: unless-stopped
     init: true
     environment:
+      APP_VERSION: ${RELEASE_TAG}
+      DEPLOYMENT_SCHEDULER_ENABLED: ${DEPLOYMENT_SCHEDULER_ENABLED:-false}
       SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET}
       ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:?Set ADMIN_PASSWORD_HASH}
     volumes:

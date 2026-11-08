@@ -5,6 +5,8 @@
   "files": [
     "admin-dark.html",
     "admin-light.html",
+    "admin-updates-dark.html",
+    "admin-updates-light.html",
     "calendar-dark.html",
     "calendar-light.html",
     "divisions-dark.html",

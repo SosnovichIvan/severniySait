@@ -285,7 +285,7 @@ describe("API and storage", () => {
     expect(second.db.pragma("integrity_check", { simple: true })).toBe("ok");
     expect(second.db.pragma("foreign_key_check")).toEqual([]);
     expect(second.db.pragma("foreign_keys", { simple: true })).toBe(1);
-    expect(second.db.prepare("SELECT * FROM migrations").all()).toHaveLength(6);
+    expect(second.db.prepare("SELECT * FROM migrations").all()).toHaveLength(7);
     second.close();
     const sessions = new SqliteSessions(store);
     sessions.get("missing", (_e, v) => expect(v).toBeNull());
@@ -690,4 +690,74 @@ it("manages channels with validation, authentication, persistence and one-time s
   expect(store.list(true).channels).toHaveLength(3);
   expect(store.list().channels.some((c) => c.id === "channel-1")).toBe(false);
   expect(store.db.pragma("integrity_check", { simple: true })).toBe("ok");
+});
+
+it("schedules updates only for editors, prevents overlap, persists and cancels", async () => {
+  expect((await agent.get("/api/admin/deployments")).status).toBe(401);
+  const input = {
+    version: "1.2.3",
+    scheduledAt: new Date(Date.now() + 120000).toISOString(),
+  };
+  const schedule = (body: object, token = csrf) =>
+    agent.post("/api/admin/deployments").set("x-csrf-token", token).send(body);
+  expect((await schedule(input)).status).toBe(401);
+  await login();
+  expect((await agent.get("/api/admin/deployments")).body).toEqual({
+    enabled: false,
+    currentVersion: "local",
+    jobs: [],
+  });
+  expect((await schedule(input, "wrong")).status).toBe(403);
+  for (const invalid of [
+    { version: "latest" },
+    { version: "1.2.3;echo x" },
+    { scheduledAt: "bad" },
+    { scheduledAt: new Date().toISOString() },
+  ])
+    expect((await schedule({ ...input, ...invalid })).status).toBe(400);
+  const result = await schedule(input);
+  expect(result.status).toBe(201);
+  const id = result.body.id;
+  expect((await schedule(input)).status).toBe(409);
+  expect(
+    (await agent.get("/api/admin/deployments")).body.jobs[0],
+  ).toMatchObject({ ...input, id, status: "scheduled" });
+  expect((await agent.get("/api/content")).body).not.toHaveProperty("jobs");
+  expect(
+    (
+      await agent
+        .delete(`/api/admin/deployments/${id}`)
+        .set("x-csrf-token", csrf)
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await agent
+        .delete(`/api/admin/deployments/${id}`)
+        .set("x-csrf-token", csrf)
+    ).status,
+  ).toBe(409);
+  expect((await schedule(input)).status).toBe(201);
+  store.close();
+  store = new Store(join(dir, "test.sqlite"));
+  expect(store.deployments().find((job) => job.id === id)?.status).toBe(
+    "cancelled",
+  );
+});
+
+it("keeps public API available during editorial publication changes", async () => {
+  await login();
+  const id = store.saveEvent(event);
+  const results = await Promise.all(
+    Array.from({ length: 60 }, (_, i) =>
+      i % 3 === 0
+        ? agent
+            .patch(`/api/admin/events/${id}/publication`)
+            .set("x-csrf-token", csrf)
+            .send({ published: i % 2 === 0 })
+        : agent.get(i % 3 === 1 ? "/api/health" : "/api/content"),
+    ),
+  );
+  expect(results.every((result) => result.status === 200)).toBe(true);
+  expect(store.list(true).events[0].id).toBe(id);
 });

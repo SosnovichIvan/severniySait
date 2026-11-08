@@ -1,5 +1,6 @@
+import { UpdateEditor } from "./update-editor";
 import { ChannelEditor } from "./channel-editor";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { DivisionEditor } from "./division-editor";
 import { LoginDialog } from "../../../features/editor-login";
 import { ConfirmDialog } from "../../../shared/ui/confirm-dialog";
@@ -8,6 +9,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   CalendarDays,
   Link2,
+  RefreshCw,
   Image,
   MapPin,
   LogOut,
@@ -51,9 +53,16 @@ export function AdminPage({ themeToggle }: { themeToggle?: ReactNode }) {
     enabled: !!session.data?.admin,
     retry: false,
   });
-  const [tab, setTab] = useState<"events" | "media" | "divisions" | "channels">(
-    "events",
-  );
+  const [params, setParams] = useSearchParams();
+  const requestedTab = params.get("section");
+  const tab = ["media", "divisions", "channels", "updates"].includes(
+    requestedTab ?? "",
+  )
+    ? requestedTab!
+    : "events";
+  function setTab(value: string) {
+    setParams(value === "events" ? {} : { section: value }, { replace: true });
+  }
   const [draft, setDraft] = useState<Draft>(blank);
   const [mediaEdit, setMediaEdit] = useState<MediaRecord | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -74,6 +83,7 @@ export function AdminPage({ themeToggle }: { themeToggle?: ReactNode }) {
     mutation.mutate(async () => {
       await send("/api/logout", "POST", {}, csrf);
       client.removeQueries({ queryKey: ["admin-content"] });
+      client.removeQueries({ queryKey: ["deployments"] });
       await client.invalidateQueries({ queryKey: ["session"] });
     });
   }
@@ -281,9 +291,22 @@ export function AdminPage({ themeToggle }: { themeToggle?: ReactNode }) {
         >
           <Link2 size={16} /> Площадки и каналы
         </button>
+        <button
+          aria-pressed={tab === "updates"}
+          className={tab === "updates" ? "active" : ""}
+          onClick={() => {
+            setTab("updates");
+            mutation.reset();
+            setFeedback("");
+          }}
+        >
+          <RefreshCw size={16} /> Обновление сайта
+        </button>
       </div>
       {notice}
-      {tab === "channels" ? (
+      {tab === "updates" ? (
+        <UpdateEditor csrf={csrf} />
+      ) : tab === "channels" ? (
         <>
           {content.isPending && <p role="status">Загружаем площадки…</p>}
           {content.error && (

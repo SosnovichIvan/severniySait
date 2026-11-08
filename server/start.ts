@@ -13,6 +13,8 @@ const server = createApp({
   sessionSecret: SESSION_SECRET,
   passwordHash: ADMIN_PASSWORD_HASH,
   production: process.env.NODE_ENV === "production",
+  deploymentEnabled: process.env.DEPLOYMENT_SCHEDULER_ENABLED === "true",
+  currentVersion: process.env.APP_VERSION,
 }).listen(Number(process.env.PORT ?? 3001), "0.0.0.0", () =>
   console.log("API ready on port", process.env.PORT ?? 3001),
 );
