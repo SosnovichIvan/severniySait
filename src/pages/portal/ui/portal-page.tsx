@@ -10,7 +10,6 @@ import { Link, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowUpRight,
-  ArrowRight,
   Search,
   MapPin,
   Image,
@@ -100,16 +99,10 @@ export function PortalPage() {
                 <br />
                 <span>человек</span>
               </h1>
-              <p className="hero-description">
-                Материалы объединения, региональные подразделения и календарь
-                событий — в одном пространстве.
+              <p className="hero-statement">
+                Сохранять традиции и помогать друг другу — в этом смысл общего
+                дела.
               </p>
-              <Link className="button primary" to="/media">
-                Смотреть медиа <ArrowUpRight size={18} />
-              </Link>
-              <Link className="text-link" to="/divisions">
-                Найти подразделение <ArrowRight size={16} />
-              </Link>
             </div>
             <section className="hero-about" aria-labelledby="about-title">
               <p className="eyebrow">ОБ ОБЪЕДИНЕНИИ</p>

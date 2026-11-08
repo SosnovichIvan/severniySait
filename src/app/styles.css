@@ -170,12 +170,16 @@ textarea:focus-visible {
 .heading-dot {
   color: var(--accent);
 }
-.hero-description {
-  font-size: 17px;
-  line-height: 1.8;
+.hero-statement {
+  font-family: var(--serif);
+  font-size: clamp(23px, 2.1vw, 29px);
+  line-height: 1.55;
   color: var(--muted);
-  max-width: 400px;
-  margin-bottom: 32px;
+  max-width: 430px;
+  margin-top: 32px;
+  padding-left: 24px;
+  border-left: 2px solid var(--accent);
+  text-wrap: pretty;
 }
 .button {
   display: inline-flex;
@@ -207,9 +211,6 @@ textarea:focus-visible {
   gap: 12px;
   font-size: 14px;
   font-weight: 600;
-}
-.hero-copy > .text-link {
-  margin-left: 23px;
 }
 .hero-about {
   padding: 34px;
@@ -891,10 +892,6 @@ textarea {
   .hero h1 {
     font-size: 75px;
   }
-  .hero-copy > .text-link {
-    margin: 22px 0 0;
-    display: flex;
-  }
   .division-grid {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -941,8 +938,8 @@ textarea {
     font-size: 62px;
     letter-spacing: -3px;
   }
-  .hero-description {
-    font-size: 16px;
+  .hero-statement {
+    font-size: 23px;
   }
   .connection {
     gap: 30px;
@@ -988,20 +985,11 @@ textarea {
     letter-spacing: -2.5px;
     margin-top: 25px;
   }
-  .hero-description {
-    font-size: 16px;
+  .hero-statement {
+    font-size: 23px;
     max-width: 340px;
-  }
-  .hero-copy > .text-link {
-    display: inline-flex;
-    margin: 10px 0 0;
-    font-size: 14px;
-    gap: 5px;
-  }
-  .hero .button {
-    font-size: 14px;
-    padding-inline: 24px;
-    margin-right: 18px;
+    padding-left: 20px;
+    margin-top: 26px;
   }
   .section {
     padding: 40px 0;
