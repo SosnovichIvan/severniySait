@@ -95,9 +95,7 @@ export function PortalPage() {
             <div className="hero-copy">
               <p className="eyebrow">Истории, события и люди</p>
               <h1 aria-label="Северный человек">
-                Северный
-                <br />
-                <span>человек</span>
+                Северный <span>человек</span>
               </h1>
               <p className="hero-statement">
                 Сохранять традиции и помогать друг другу — в этом смысл общего
@@ -106,11 +104,7 @@ export function PortalPage() {
             </div>
             <section className="hero-about" aria-labelledby="about-title">
               <p className="eyebrow">ОБ ОБЪЕДИНЕНИИ</p>
-              <h2 id="about-title">
-                Чем занимается
-                <br />
-                «Северный человек»
-              </h2>
+              <h2 id="about-title">Чем занимается «Северный человек»</h2>
               <p className="about-intro">
                 Объединение основано в 2022 году и работает через региональные
                 подразделения. Основные направления, заявленные на его сайте:
