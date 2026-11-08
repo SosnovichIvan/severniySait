@@ -107,8 +107,9 @@ export function PortalPage() {
                 />
               </div>
               <p className="hero-statement">
-                Сохранять традиции и помогать друг другу — в этом смысл общего
-                дела.
+                Наша сила — в единстве. Сохраняем русские традиции, развиваем
+                спорт, воспитываем молодёжь, укрепляем устои общества и
+                поддерживаем граждан.
               </p>
             </div>
             <section className="hero-about" aria-labelledby="about-title">
