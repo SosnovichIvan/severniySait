@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { UpdateEditor } from "../src/pages/admin/ui/update-editor";
-import type { DeploymentRecord } from "../contracts/content";
+import type { ContentUpdate } from "../contracts/content";
 function mount(handler: (url: string, options?: RequestInit) => unknown) {
   vi.stubGlobal(
     "fetch",
@@ -24,16 +24,19 @@ function mount(handler: (url: string, options?: RequestInit) => unknown) {
 }
 it("saves an explicit Moscow update time, preserves failed input, prevents overlap and cancels", async () => {
   let fail = false;
-  let jobs: DeploymentRecord[] = [];
+  let jobs: ContentUpdate[] = [];
   mount((url, options) => {
     if (!options?.method)
-      return { enabled: false, currentVersion: "local", jobs };
+      return {
+        drafts: [{ kind: "events", id: "draft", title: "Черновик события" }],
+        jobs,
+      };
     if (fail) throw new Error("Нет связи");
     if (options.method === "POST")
       jobs = [
         {
           ...JSON.parse(String(options.body)),
-          version: "1.2.3",
+          count: 1,
           id: "job",
           createdAt: "2026-11-08T00:00:00Z",
           status: "scheduled",
@@ -45,8 +48,9 @@ it("saves an explicit Moscow update time, preserves failed input, prevents overl
     return { ok: true };
   });
   expect(screen.getByRole("status")).toHaveTextContent("Загружаем");
-  await screen.findByText(/Локальный режим/);
+  await screen.findByText("Черновик события");
   const user = userEvent.setup();
+  await user.click(screen.getByRole("checkbox", { name: "Черновик события" }));
   expect(screen.queryByLabelText("Версия обновления")).not.toBeInTheDocument();
   fireEvent.change(screen.getByLabelText("Дата и время обновления (МСК)"), {
     target: { value: "2026-12-01T03:00" },
@@ -69,6 +73,7 @@ it("saves an explicit Moscow update time, preserves failed input, prevents overl
     .mock.calls.find(([, options]) => options?.method === "POST")!;
   expect(JSON.parse(String(call[1]?.body))).toEqual({
     scheduledAt: "2026-12-01T00:00:00.000Z",
+    targets: [{ kind: "events", id: "draft" }],
   });
   expect(
     screen.getByRole("button", { name: "Запланировать обновление" }),
@@ -81,19 +86,19 @@ it("saves an explicit Moscow update time, preserves failed input, prevents overl
 });
 it("retries schedule loading and displays worker outcomes without cancellation of running jobs", async () => {
   let fail = true;
-  const jobs: DeploymentRecord[] = ["running", "succeeded", "failed"].map(
+  const jobs: ContentUpdate[] = ["running", "succeeded", "failed"].map(
     (status, i) => ({
       id: String(i),
-      version: "1.0.0",
+      count: 1,
       scheduledAt: "2026-12-01T00:00:00Z",
       createdAt: "2026-11-08T00:00:00Z",
-      status: status as DeploymentRecord["status"],
+      status: status as ContentUpdate["status"],
       detail: "Результат проверки",
     }),
   );
   mount(() => {
     if (fail) throw new Error("offline");
-    return { enabled: true, currentVersion: "1.0.0", jobs };
+    return { drafts: [], jobs };
   });
   expect(await screen.findByRole("alert")).toHaveTextContent(
     "Не удалось загрузить",

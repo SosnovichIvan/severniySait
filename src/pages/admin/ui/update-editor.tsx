@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { request, send } from "../../../shared/api";
-import { deploymentsSchema } from "../../../../contracts/content";
+import { contentUpdatesSchema } from "../../../../contracts/content";
 const statusNames = {
   scheduled: "Запланировано",
   running: "Выполняется",
@@ -11,19 +11,20 @@ const statusNames = {
 };
 export function UpdateEditor({ csrf }: { csrf: string }) {
   const client = useQueryClient();
+  const [selected, setSelected] = useState<string[]>([]);
   const [time, setTime] = useState("");
   const [notice, setNotice] = useState("");
   const updates = useQuery({
-    queryKey: ["deployments"],
+    queryKey: ["content-updates"],
     queryFn: async () =>
-      deploymentsSchema.parse(await request("/api/admin/deployments")),
+      contentUpdatesSchema.parse(await request("/api/admin/content-updates")),
     refetchInterval: 5000,
     retry: false,
   });
   const mutation = useMutation({
     mutationFn: async (action: () => Promise<unknown>) => action(),
     onSuccess: async () => {
-      await client.invalidateQueries({ queryKey: ["deployments"] });
+      await client.invalidateQueries({ queryKey: ["content-updates"] });
     },
     onError: () => setNotice(""),
   });
@@ -35,9 +36,16 @@ export function UpdateEditor({ csrf }: { csrf: string }) {
     if (mutation.isPending) return;
     mutation.mutate(async () => {
       await send(
-        "/api/admin/deployments",
+        "/api/admin/content-updates",
         "POST",
-        { scheduledAt: new Date(`${time}:00+03:00`).toISOString() },
+        {
+          scheduledAt: new Date(`${time}:00+03:00`).toISOString(),
+          targets: updates
+            .data!.drafts.filter((item) =>
+              selected.includes(`${item.kind}:${item.id}`),
+            )
+            .map(({ kind, id }) => ({ kind, id })),
+        },
         csrf,
       );
       setNotice("Обновление запланировано.");
@@ -47,19 +55,12 @@ export function UpdateEditor({ csrf }: { csrf: string }) {
     <section className="updates-editor">
       <div className="section-heading">
         <h2>Обновление сайта</h2>
-        {updates.data && (
-          <span>
-            Текущая версия:{" "}
-            {updates.data.currentVersion === "local"
-              ? "локальная"
-              : updates.data.currentVersion}
-          </span>
-        )}
       </div>
       <p>
-        Публикация материалов не останавливает сайт. Обновление кода может
-        вызвать короткий технический перерыв — выберите удобное время по Москве.
-        Само назначение обновления сайт не останавливает.
+        Сохраните материалы как черновики, выберите их ниже и назначьте время
+        публикации по Москве. Сайт продолжит работать; код и версия приложения
+        не изменятся. Изменение выбранного черновика отменит его выполнение —
+        потребуется назначить публикацию заново.
       </p>
       {updates.isPending && <p role="status">Загружаем расписание…</p>}
       {updates.error && (
@@ -80,16 +81,40 @@ export function UpdateEditor({ csrf }: { csrf: string }) {
       )}
       {updates.data && (
         <>
-          {!updates.data.enabled && (
-            <p className="update-local-note">
-              Локальный режим: расписание сохраняется, но обновления не
-              запускаются. Исполнитель будет подключён на VPS.
-            </p>
-          )}
           <div className="admin-grid">
             <section className="panel editor">
               <h3>Назначить обновление</h3>
               <form onSubmit={schedule}>
+                <fieldset
+                  className="update-targets"
+                  disabled={mutation.isPending || busy}
+                >
+                  <legend>Черновики для публикации</legend>
+                  {!updates.data.drafts.length && (
+                    <p>
+                      Нет черновиков. Сначала сохраните материал без публикации.
+                    </p>
+                  )}
+                  {updates.data.drafts.map((item) => {
+                    const key = `${item.kind}:${item.id}`;
+                    return (
+                      <label className="check" key={key}>
+                        <input
+                          type="checkbox"
+                          checked={selected.includes(key)}
+                          onChange={(event) =>
+                            setSelected((values) =>
+                              event.target.checked
+                                ? [...values, key]
+                                : values.filter((value) => value !== key),
+                            )
+                          }
+                        />
+                        <span>{item.title}</span>
+                      </label>
+                    );
+                  })}
+                </fieldset>
                 <label>
                   Дата и время обновления (МСК)
                   <input
@@ -102,7 +127,15 @@ export function UpdateEditor({ csrf }: { csrf: string }) {
                 </label>
                 <button
                   className="button primary"
-                  disabled={mutation.isPending || busy}
+                  disabled={
+                    mutation.isPending ||
+                    busy ||
+                    !selected.some((key) =>
+                      updates.data.drafts.some(
+                        (item) => key === `${item.kind}:${item.id}`,
+                      ),
+                    )
+                  }
                 >
                   {mutation.isPending
                     ? "Сохраняем…"
@@ -121,7 +154,7 @@ export function UpdateEditor({ csrf }: { csrf: string }) {
               {updates.data.jobs.map((job) => (
                 <article className="admin-row" key={job.id}>
                   <span className="publication">{statusNames[job.status]}</span>
-                  <h4>Версия {job.version}</h4>
+                  <h4>Материалов: {job.count}</h4>
                   <p>
                     {new Intl.DateTimeFormat("ru-RU", {
                       dateStyle: "long",
@@ -138,7 +171,7 @@ export function UpdateEditor({ csrf }: { csrf: string }) {
                       onClick={() =>
                         mutation.mutate(async () => {
                           await send(
-                            `/api/admin/deployments/${job.id}`,
+                            `/api/admin/content-updates/${job.id}`,
                             "DELETE",
                             {},
                             csrf,

@@ -84,6 +84,7 @@ export function AdminPage({ themeToggle }: { themeToggle?: ReactNode }) {
       await send("/api/logout", "POST", {}, csrf);
       client.removeQueries({ queryKey: ["admin-content"] });
       client.removeQueries({ queryKey: ["deployments"] });
+      client.removeQueries({ queryKey: ["content-updates"] });
       navigate("/", { replace: true });
       await client.invalidateQueries({ queryKey: ["session"] });
     });

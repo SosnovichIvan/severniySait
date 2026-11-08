@@ -2023,3 +2023,26 @@ label small {
   gap: 16px;
   margin-bottom: 16px;
 }
+
+.update-targets {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.update-targets legend {
+  padding-inline: 6px;
+  font-weight: 600;
+}
+.update-targets .check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.update-targets input {
+  flex: 0 0 auto;
+  margin-top: 4px;
+}

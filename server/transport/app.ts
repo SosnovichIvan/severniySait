@@ -20,6 +20,7 @@ import {
   publicationInput,
   publicationKind,
   deploymentInput,
+  contentUpdateInput,
   deploymentVersion,
 } from "../../contracts/content.js";
 import { Store } from "../repository/store.js";
@@ -128,6 +129,37 @@ export function createApp(options: AppOptions) {
   app.get("/api/admin/content", (_req, res) =>
     res.json(options.store.list(true)),
   );
+  app.get("/api/admin/content-updates", (_req, res) =>
+    res.json({
+      jobs: options.store.contentUpdates.list(),
+      drafts: options.store.contentUpdates.drafts(),
+    }),
+  );
+  app.post("/api/admin/content-updates", (req, res) => {
+    const input = contentUpdateInput.parse(req.body);
+    const now = new Date();
+    if (Date.parse(input.scheduledAt) < now.getTime() + 60000)
+      return res
+        .status(400)
+        .json({ error: "Выберите время минимум на минуту позже текущего." });
+    try {
+      const id = options.store.contentUpdates.schedule(
+        input.targets,
+        new Date(input.scheduledAt).toISOString(),
+        now.toISOString(),
+      );
+      return res.status(201).json({ id });
+    } catch (error) {
+      return res.status(409).json({ error: (error as Error).message });
+    }
+  });
+  app.delete("/api/admin/content-updates/:id", (req, res) => {
+    if (!options.store.contentUpdates.cancel(req.params.id))
+      return res
+        .status(409)
+        .json({ error: "Можно отменить только запланированную публикацию." });
+    return res.json({ ok: true });
+  });
   app.get("/api/admin/deployments", (_req, res) =>
     res.json({
       enabled: !!options.deploymentEnabled,
@@ -136,6 +168,10 @@ export function createApp(options: AppOptions) {
     }),
   );
   app.post("/api/admin/deployments", async (req, res) => {
+    if (!options.deploymentEnabled)
+      return res.status(410).json({
+        error: "Обновления кода выполняются только GitHub Actions по тегу.",
+      });
     const input = deploymentInput.parse(req.body);
     const now = new Date();
     if (new Date(input.scheduledAt).getTime() < now.getTime() + 60000)

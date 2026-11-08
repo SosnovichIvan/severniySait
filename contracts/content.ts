@@ -96,3 +96,20 @@ export const deploymentsSchema = z.object({
   currentVersion: z.string(),
   jobs: z.array(deploymentSchema),
 });
+
+export const contentTarget = z.object({
+  kind: publicationKind,
+  id: z.string().min(1).max(200),
+});
+export type ContentTarget = z.infer<typeof contentTarget>;
+export const contentUpdateInput = deploymentInput.extend({
+  targets: z.array(contentTarget).min(1).max(100),
+});
+export const contentUpdateSchema = deploymentSchema
+  .omit({ version: true })
+  .extend({ count: z.number().int().positive() });
+export type ContentUpdate = z.infer<typeof contentUpdateSchema>;
+export const contentUpdatesSchema = z.object({
+  jobs: z.array(contentUpdateSchema),
+  drafts: z.array(contentTarget.extend({ title: z.string() })),
+});

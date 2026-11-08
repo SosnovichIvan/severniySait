@@ -67,11 +67,7 @@ for (const theme of ["dark", "light"])
       csrf: "design-only",
     });
     client.setQueryData(["admin-content"], { events: [], media: [] });
-    client.setQueryData(["deployments"], {
-      enabled: false,
-      currentVersion: "local",
-      jobs: [],
-    });
+    client.setQueryData(["content-updates"], { jobs: [], drafts: [] });
     const loginClient = new QueryClient({
       defaultOptions: { queries: { staleTime: Infinity } },
     });

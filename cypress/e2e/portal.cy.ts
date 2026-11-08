@@ -181,8 +181,10 @@ describe('Editorial workspace and channels',()=>{
 describe('Explicit site update schedule',()=>{
  it('adds the update tab, saves a chosen time and cancels without stopping the public site',()=>{
   cy.visit('/admin');cy.get('input[type=password]').type('e2e-password');cy.get('dialog').contains('button','Войти').click();
+  cy.contains('button','Выйти').should('be.visible');
+  cy.request('/api/session').then(({body})=>cy.request({method:'POST',url:'/api/admin/events',headers:{'x-csrf-token':body.csrf},body:{title:'Плановая публикация E2E',description:'Подготовленный текст',city:'Москва',startsAt:new Date().toISOString(),published:false}}));
   cy.get('.tabs').contains('button','Обновление сайта').click();cy.location('search').should('contain','section=updates');
-  cy.contains('Локальный режим');cy.contains('label','Версия обновления').should('not.exist');
+  cy.contains('label','Плановая публикация E2E').find('input[type=checkbox]').check();cy.contains('label','Версия обновления').should('not.exist');
   const selected=new Date(Date.now()+8*60000+3*3600000).toISOString().slice(0,16);
   cy.contains('label','Дата и время обновления (МСК)').find('input').type(selected);
   cy.contains('button','Запланировать обновление').click();cy.contains('[role=status]','Обновление запланировано');cy.contains('.publication','Запланировано');

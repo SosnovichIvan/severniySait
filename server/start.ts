@@ -14,7 +14,7 @@ const server = createApp({
   sessionSecret: SESSION_SECRET,
   passwordHash: ADMIN_PASSWORD_HASH,
   production: process.env.NODE_ENV === "production",
-  deploymentEnabled: process.env.DEPLOYMENT_SCHEDULER_ENABLED === "true",
+
   currentVersion: process.env.APP_VERSION,
   resolveDeploymentVersion: process.env.UPDATE_RELEASE_VERSION
     ? async () => deploymentVersion.parse(process.env.UPDATE_RELEASE_VERSION)
@@ -22,8 +22,20 @@ const server = createApp({
 }).listen(Number(process.env.PORT ?? 3001), "0.0.0.0", () =>
   console.log("API ready on port", process.env.PORT ?? 3001),
 );
+const publicationTimer = setInterval(() => {
+  try {
+    store.contentUpdates.process(new Date().toISOString());
+  } catch (error) {
+    console.error(
+      "Scheduled publication failed",
+      error instanceof Error ? error.message : "unknown error",
+    );
+  }
+}, 5000);
+publicationTimer.unref();
 for (const signal of ["SIGTERM", "SIGINT"])
   process.on(signal, () => {
+    clearInterval(publicationTimer);
     server.close(() => {
       store.close();
       process.exit(0);

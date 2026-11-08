@@ -1,3 +1,4 @@
+import { ContentUpdates } from "./content-updates.js";
 import defaultChannels from "../../contracts/channels.json" with { type: "json" };
 import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
@@ -13,6 +14,7 @@ import type {
 } from "../../contracts/content.js";
 export class Store {
   db: Database.Database;
+  contentUpdates: ContentUpdates;
   constructor(path: string) {
     mkdirSync(dirname(path), { recursive: true });
     this.db = new Database(path);
@@ -65,6 +67,7 @@ export class Store {
         CREATE UNIQUE INDEX IF NOT EXISTS deployments_active ON deployments((1)) WHERE status IN ('scheduled','running');
         INSERT OR IGNORE INTO migrations VALUES(7);`);
     })();
+    this.contentUpdates = new ContentUpdates(this.db);
   }
   deployments() {
     return this.db

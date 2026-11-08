@@ -35,6 +35,7 @@ beforeEach(async () => {
       uploadDir: join(dir, "uploads"),
       sessionSecret: "test-secret-only-32-characters-long",
       passwordHash: await hash("test-password", 4),
+      deploymentEnabled: true,
       currentVersion: "1.0.0",
       resolveDeploymentVersion: resolvedVersion,
     }),
@@ -289,7 +290,7 @@ describe("API and storage", () => {
     expect(second.db.pragma("integrity_check", { simple: true })).toBe("ok");
     expect(second.db.pragma("foreign_key_check")).toEqual([]);
     expect(second.db.pragma("foreign_keys", { simple: true })).toBe(1);
-    expect(second.db.prepare("SELECT * FROM migrations").all()).toHaveLength(7);
+    expect(second.db.prepare("SELECT * FROM migrations").all()).toHaveLength(8);
     second.close();
     const sessions = new SqliteSessions(store);
     sessions.get("missing", (_e, v) => expect(v).toBeNull());
@@ -706,7 +707,7 @@ it("schedules updates only for editors, prevents overlap, persists and cancels",
   expect((await schedule(input)).status).toBe(401);
   await login();
   expect((await agent.get("/api/admin/deployments")).body).toEqual({
-    enabled: false,
+    enabled: true,
     currentVersion: "1.0.0",
     jobs: [],
   });

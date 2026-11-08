@@ -5,9 +5,11 @@ const mocks = vi.hoisted(() => ({
   create: vi.fn(),
   store: vi.fn(),
   storeClose: vi.fn(),
+  publish: vi.fn(),
 }));
 vi.mock("../server/repository/store", () => ({
   Store: class {
+    contentUpdates = { process: mocks.publish };
     constructor(path: string) {
       mocks.store(path);
     }
@@ -76,6 +78,25 @@ it("starts with defaults and shuts down gracefully with deadline", async () => {
     expect.objectContaining({ uploadDir: "uploads", production: false }),
   );
   expect(mocks.listen).toHaveBeenCalledWith(3001, "0.0.0.0");
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  vi.advanceTimersByTime(5000);
+  expect(mocks.publish).toHaveBeenCalledWith(expect.any(String));
+  mocks.publish.mockImplementationOnce(() => {
+    throw new Error("storage unavailable");
+  });
+  vi.advanceTimersByTime(5000);
+  expect(console.error).toHaveBeenCalledWith(
+    "Scheduled publication failed",
+    "storage unavailable",
+  );
+  mocks.publish.mockImplementationOnce(() => {
+    throw "unknown";
+  });
+  vi.advanceTimersByTime(5000);
+  expect(console.error).toHaveBeenCalledWith(
+    "Scheduled publication failed",
+    "unknown error",
+  );
   callbacks[0]();
   expect(mocks.storeClose).toHaveBeenCalled();
   expect(exit).toHaveBeenCalledWith(0);
@@ -83,6 +104,7 @@ it("starts with defaults and shuts down gracefully with deadline", async () => {
   expect(exit).toHaveBeenCalledWith(1);
 });
 it("honors production configuration", async () => {
+  vi.useFakeTimers();
   vi.stubEnv("SESSION_SECRET", "s".repeat(40));
   vi.stubEnv("ADMIN_PASSWORD_HASH", "hash");
   vi.stubEnv("DATABASE_PATH", "custom.sqlite");
@@ -100,6 +122,7 @@ it("honors production configuration", async () => {
 });
 
 it("supports an operator-pinned published version for disconnected environments", async () => {
+  vi.useFakeTimers();
   vi.stubEnv("SESSION_SECRET", "s".repeat(40));
   vi.stubEnv("ADMIN_PASSWORD_HASH", "hash");
   vi.stubEnv("UPDATE_RELEASE_VERSION", "2.3.4");
