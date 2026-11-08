@@ -1,0 +1,19 @@
+{
+  "projectId": "9d56ecdb-4637-4e15-9ca0-cb6a250c9224",
+  "name": "Северный человек · портал",
+  "localUrl": "http://127.0.0.1:56879/projects/9d56ecdb-4637-4e15-9ca0-cb6a250c9224",
+  "files": [
+    "admin-dark.html",
+    "admin-light.html",
+    "calendar-dark.html",
+    "calendar-light.html",
+    "divisions-dark.html",
+    "divisions-light.html",
+    "home-dark.html",
+    "home-light.html",
+    "links-dark.html",
+    "links-light.html",
+    "media-dark.html",
+    "media-light.html"
+  ]
+}

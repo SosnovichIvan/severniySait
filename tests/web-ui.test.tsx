@@ -1,0 +1,433 @@
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { App } from "../src/app/shell";
+import { PortalPage } from "../src/pages/portal";
+import { AdminPage } from "../src/pages/admin";
+import { request, loadContent, loadSession, send } from "../src/shared/api";
+const event = {
+  id: "one",
+  title: "Открытая встреча",
+  city: "Москва",
+  description: "Информация о встрече",
+  startsAt: new Date(
+    new Date().getFullYear(),
+    new Date().getMonth(),
+    15,
+    18,
+  ).toISOString(),
+  published: true,
+};
+const photo = {
+  id: "photo",
+  title: "Фото встречи",
+  description: "Описание фотографии",
+  url: "/uploads/one.png",
+  kind: "image",
+  published: true,
+};
+const video = { ...photo, id: "video", title: "Видео встречи", kind: "video" };
+const content = { events: [event], media: [photo, video] };
+function mockApi(handler?: (url: string, options?: RequestInit) => unknown) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string, options?: RequestInit) => {
+      const value = handler?.(url, options);
+      return {
+        ok: true,
+        json: async () =>
+          value ??
+          (url === "/api/session"
+            ? { admin: false, csrf: "csrf" }
+            : url.includes("content")
+              ? content
+              : { ok: true }),
+      };
+    }),
+  );
+}
+function mount(
+  component: React.ReactNode,
+  path = "/",
+  data: unknown = content,
+  admin = false,
+) {
+  const client = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, staleTime: Infinity },
+      mutations: { retry: false },
+    },
+  });
+  if (data !== null) client.setQueryData(["content"], data);
+  if (admin) {
+    client.setQueryData(["session"], { admin: true, csrf: "csrf" });
+    if (data !== null) client.setQueryData(["admin-content"], data);
+  }
+  render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[path]}>{component}</MemoryRouter>
+    </QueryClientProvider>,
+  );
+  return client;
+}
+describe("public UI", () => {
+  it("renders home, navigates, toggles themes and mobile menu, handles missing page", async () => {
+    mockApi();
+    const user = userEvent.setup();
+    mount(<App />);
+    expect(
+      screen.getByRole("heading", { name: /Северный человек/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Фото встречи" }),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "Включить светлую тему" }),
+    );
+    expect(localStorage.getItem("theme")).toBe("light");
+    await user.click(
+      screen.getByRole("button", { name: "Включить тёмную тему" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Открыть меню" }));
+    expect(
+      screen.getByRole("button", { name: "Закрыть меню" }),
+    ).toHaveAttribute("aria-expanded", "true");
+    await user.click(screen.getByRole("button", { name: "Закрыть меню" }));
+    await user.click(screen.getByRole("link", { name: "Медиапространство" }));
+    expect(
+      screen.getByRole("heading", { name: "Медиапространство." }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("link", { name: "Календарь событий" }));
+    expect(
+      screen.getByRole("heading", { name: "Календарь событий." }),
+    ).toBeInTheDocument();
+  });
+  it("renders light preference and 404", () => {
+    localStorage.setItem("theme", "light");
+    mockApi();
+    mount(<App />, "/missing");
+    expect(
+      screen.getByRole("heading", { name: "Страница не найдена" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Включить тёмную тему" }),
+    ).toBeInTheDocument();
+  });
+  it("shows empty home, media and filters video and images", async () => {
+    mockApi();
+    const user = userEvent.setup();
+    mount(<PortalPage />, "/media");
+    expect(
+      screen.getByRole("img", { name: "Фото встречи" }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Видео" }));
+    expect(screen.queryByRole("img", { name: "Фото встречи" })).toBeNull();
+    expect(screen.getByLabelText("Видео встречи")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Фотографии" }));
+    expect(
+      screen.getByRole("img", { name: "Фото встречи" }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Все материалы" }));
+    expect(screen.getByLabelText("Видео встречи")).toBeInTheDocument();
+  });
+  it("shows actual empty states", () => {
+    mockApi();
+    mount(<PortalPage />, "/", { events: [], media: [] });
+    expect(screen.getByText("Здесь начинается хроника")).toBeInTheDocument();
+  });
+  it("shows empty media", () => {
+    mockApi();
+    mount(<PortalPage />, "/media", { events: [], media: [] });
+    expect(
+      screen.getByText("Материалы в этом разделе пока не опубликованы."),
+    ).toBeInTheDocument();
+  });
+  it("searches divisions and handles unmatched search", async () => {
+    mockApi();
+    const user = userEvent.setup();
+    mount(<PortalPage />, "/divisions");
+    await user.type(
+      screen.getByRole("textbox", { name: "Найти город" }),
+      "Москва",
+    );
+    expect(screen.getByRole("link", { name: "Москва" })).toHaveAttribute(
+      "href",
+      "https://t.me/moskvasevchelovek",
+    );
+    expect(screen.queryByRole("link", { name: "Абакан" })).toBeNull();
+    await user.clear(screen.getByRole("textbox", { name: "Найти город" }));
+    await user.type(
+      screen.getByRole("textbox", { name: "Найти город" }),
+      "Нетгорода",
+    );
+    expect(screen.getByText(/Город не найден/)).toBeInTheDocument();
+  });
+  it("changes calendar months and day filters", async () => {
+    mockApi();
+    const user = userEvent.setup();
+    mount(<PortalPage />, "/calendar");
+    expect(screen.getByText(event.title)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "15" }));
+    expect(screen.getByText(event.title)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "16" }));
+    expect(
+      screen.getByText(/На выбранный период событий пока нет/),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "16" }));
+    expect(screen.getByText(event.title)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Следующий месяц" }));
+    expect(screen.queryByText(event.title)).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Предыдущий месяц" }));
+    expect(screen.getByText(event.title)).toBeInTheDocument();
+  });
+  it("renders pending and request failure, retries successfully", async () => {
+    let reject!: (error: Error) => void;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        () =>
+          new Promise((_r, j) => {
+            reject = j;
+          }),
+      ),
+    );
+    mount(<PortalPage />, "/", null);
+    expect(screen.getByRole("status")).toHaveTextContent("Загружаем");
+    reject(new Error("offline"));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Не удалось");
+    mockApi();
+    await userEvent.click(screen.getByRole("button", { name: "Повторить" }));
+    expect(
+      await screen.findByRole("img", { name: "Фото встречи" }),
+    ).toBeInTheDocument();
+  });
+});
+describe("admin UI", () => {
+  it("shows pending and session failure with retry", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("offline");
+      }),
+    );
+    mount(<AdminPage />, "/admin", null);
+    expect(screen.getByRole("status")).toHaveTextContent("Проверяем");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Не удалось проверить",
+    );
+    mockApi();
+    await userEvent.click(screen.getByRole("button", { name: "Повторить" }));
+    expect(
+      await screen.findByRole("heading", { name: "Вход в админку" }),
+    ).toBeInTheDocument();
+  });
+  it("logs in, preserves failed password input, logs out and clears cached private content", async () => {
+    let logged = false;
+    let fail = true;
+    mockApi((url) => {
+      if (url === "/api/session") return { admin: logged, csrf: "csrf" };
+      if (url === "/api/login") {
+        if (fail) throw new Error("Неверный пароль.");
+        logged = true;
+        return { admin: true, csrf: "new" };
+      }
+      if (url === "/api/logout") {
+        logged = false;
+        return { ok: true };
+      }
+    });
+    const user = userEvent.setup();
+    mount(<AdminPage />, "/admin", null);
+    const input = await screen.findByLabelText("Пароль администратора");
+    await user.type(input, "test-password");
+    await user.click(screen.getByRole("button", { name: "Войти" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Неверный пароль",
+    );
+    expect(input).toHaveValue("test-password");
+    fail = false;
+    await user.click(screen.getByRole("button", { name: "Войти" }));
+    expect(
+      await screen.findByRole("heading", { name: "Редакция." }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Выйти" }));
+    expect(
+      await screen.findByRole("heading", { name: "Вход в админку" }),
+    ).toBeInTheDocument();
+  });
+  it("creates, edits, cancels, and deletes events with confirmation", async () => {
+    mockApi();
+    const user = userEvent.setup();
+    mount(<AdminPage />, "/admin", content, true);
+    await user.type(
+      screen.getByLabelText("Название события"),
+      "Тестовое событие",
+    );
+    await user.type(screen.getByLabelText("Город"), "Тула");
+    fireEvent.change(screen.getByLabelText("Дата и время (МСК)"), {
+      target: { value: "2026-12-10T19:30" },
+    });
+    await user.type(screen.getByLabelText("Описание"), "Описание");
+    await user.click(screen.getByLabelText("Опубликовать на сайте"));
+    await user.click(screen.getByRole("button", { name: "Сохранить событие" }));
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Событие сохранено",
+    );
+    expect(
+      vi
+        .mocked(fetch)
+        .mock.calls.some(
+          ([url, options]) =>
+            url === "/api/admin/events" &&
+            String(options?.body).includes("2026-12-10T16:30:00.000Z"),
+        ),
+    ).toBe(true);
+    await user.click(
+      screen.getByRole("button", { name: `Редактировать ${event.title}` }),
+    );
+    expect(screen.getByLabelText("Название события")).toHaveValue(event.title);
+    await user.click(
+      screen.getByRole("button", { name: "Отменить редактирование" }),
+    );
+    expect(screen.getByLabelText("Название события")).toHaveValue("");
+    await user.click(
+      screen.getByRole("button", { name: `Редактировать ${event.title}` }),
+    );
+    await user.click(screen.getByRole("button", { name: "Сохранить событие" }));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Название события")).toHaveValue(""),
+    );
+    await user.click(
+      screen.getByRole("button", { name: `Удалить ${event.title}` }),
+    );
+    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Отмена" }));
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    await user.click(
+      screen.getByRole("button", { name: `Удалить ${event.title}` }),
+    );
+    await user.click(screen.getByRole("button", { name: "Удалить" }));
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Запись удалена",
+    );
+  });
+  it("uploads, edits and cancels media, shows drafts and empty state", async () => {
+    mockApi();
+    const user = userEvent.setup();
+    mount(
+      <AdminPage />,
+      "/admin",
+      { ...content, media: [{ ...photo, published: false }, video] },
+      true,
+    );
+    await user.click(screen.getByRole("button", { name: "Медиа" }));
+    expect(screen.getByText("Черновик")).toBeInTheDocument();
+    await user.type(screen.getByLabelText("Название материала"), "Материал");
+    await user.type(screen.getByLabelText("Описание"), "Медиа описание");
+    await user.upload(
+      screen.getByLabelText("Файл медиа"),
+      new File(["png"], "photo.png", { type: "image/png" }),
+    );
+    expect(
+      Array.from(document.querySelectorAll("input,textarea"))
+        .filter((e) => !(e as HTMLInputElement).checkValidity())
+        .map((e) => e.outerHTML),
+    ).toEqual([]);
+    await user.click(
+      screen.getByRole("button", { name: "Сохранить материал" }),
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Материал сохранён",
+    );
+    await user.click(
+      screen.getByRole("button", { name: `Редактировать ${photo.title}` }),
+    );
+    expect(screen.getByLabelText("Название материала")).toHaveValue(
+      photo.title,
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Отменить редактирование" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: `Редактировать ${video.title}` }),
+    );
+    await user.click(screen.getByLabelText("Опубликовать на сайте"));
+    await user.click(
+      screen.getByRole("button", { name: "Сохранить материал" }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: "Загрузить медиа" }),
+      ).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("button", { name: "События" }));
+    expect(
+      screen.getByRole("heading", { name: "Новое событие" }),
+    ).toBeInTheDocument();
+  });
+  it("shows empty admin and fetch failure retry", async () => {
+    mockApi();
+    mount(<AdminPage />, "/admin", { events: [], media: [] }, true);
+    expect(screen.getByText(/Пока ничего нет/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Медиа" }));
+    expect(screen.getByText(/первый материал/)).toBeInTheDocument();
+  });
+  it("handles content request error", async () => {
+    let fail = true;
+    mockApi((url) => {
+      if (url === "/api/admin/content" && fail) throw new Error("offline");
+    });
+    mount(<AdminPage />, "/admin", null, true);
+    expect(screen.getByText("Загружаем…")).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Не удалось загрузить список",
+    );
+    fail = false;
+    await userEvent.click(screen.getByRole("button", { name: "Повторить" }));
+    expect(await screen.findByText(event.title)).toBeInTheDocument();
+  });
+});
+describe("API client", () => {
+  it("validates content and maps transport failures", async () => {
+    mockApi();
+    expect(await loadContent()).toMatchObject({ events: [event] });
+    expect(await loadContent(true)).toMatchObject({ media: [photo, video] });
+    expect(await loadSession()).toEqual({ admin: false, csrf: "csrf" });
+    await send("/api/test", "POST", { a: 1 }, "csrf");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: false,
+        json: async () => ({ error: "Ошибка сервера" }),
+      })),
+    );
+    await expect(request("/x")).rejects.toThrow("Ошибка сервера");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: false, json: async () => null })),
+    );
+    await expect(request("/x")).rejects.toThrow("Не удалось загрузить данные");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: false, json: async () => ({ other: true }) })),
+    );
+    await expect(request("/x")).rejects.toThrow();
+    mockApi(() => ({ events: "wrong" }));
+    await expect(loadContent()).rejects.toThrow();
+  });
+});
+
+it("supports Escape on delete confirmation", async () => {
+  mockApi();
+  mount(<AdminPage />, "/admin", content, true);
+  await userEvent.click(
+    screen.getByRole("button", { name: `Удалить ${event.title}` }),
+  );
+  fireEvent(
+    screen.getByRole("alertdialog"),
+    new Event("cancel", { bubbles: true, cancelable: true }),
+  );
+  expect(screen.queryByRole("alertdialog")).toBeNull();
+});
