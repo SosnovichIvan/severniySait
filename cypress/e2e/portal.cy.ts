@@ -88,7 +88,7 @@ describe('Themed select controls',()=>{
   order().should('contain','Сначала новые').and('be.focused');
   order().type('{enter}{home}{esc}').should('contain','Сначала новые').and('have.attr','aria-expanded','false');
   order().type('{enter}{home}{enter}').should('contain','От истоков');
-  cy.viewport(390,844);centered();cy.get('.archive-controls .select-field').each($field=>expect($field[0].getBoundingClientRect().width).to.eq(354));order().click();
+  cy.viewport(390,844);centered();cy.get('.archive-controls .select-field').each($field=>expect($field[0].getBoundingClientRect().width).to.eq($field[0].parentElement!.getBoundingClientRect().width));order().click();
   cy.document().then(d=>expect(d.documentElement.scrollWidth).to.be.at.most(390));
   cy.screenshot('select-light-mobile',{capture:'fullPage'});
   cy.get('[aria-label="Включить тёмную тему"]').click();order().click();
