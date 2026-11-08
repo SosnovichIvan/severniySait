@@ -29,7 +29,6 @@ export function PortalPage() {
     queryFn: () => loadContent(),
   });
   const [search, setSearch] = useState("");
-  const [mediaType, setMediaType] = useState("all");
   const [mediaYear, setMediaYear] = useState("all");
   const [mediaOrder, setMediaOrder] = useState<"asc" | "desc">("asc");
   const mediaYears = [
@@ -41,9 +40,7 @@ export function PortalPage() {
   ].sort();
   const archiveMedia = sortMedia(
     (data?.media ?? []).filter(
-      (m) =>
-        (mediaType === "all" || m.kind === mediaType) &&
-        (mediaYear === "all" || m.eventDate?.startsWith(mediaYear)),
+      (m) => mediaYear === "all" || m.eventDate?.startsWith(mediaYear),
     ),
     mediaOrder,
   );
@@ -336,22 +333,6 @@ export function PortalPage() {
           {path === "/media" && (
             <>
               {status}
-              <div className="tabs" aria-label="Тип медиа">
-                {[
-                  ["all", "Все материалы"],
-                  ["image", "Фотографии"],
-                  ["video", "Видео"],
-                ].map(([id, label]) => (
-                  <button
-                    key={id}
-                    aria-pressed={mediaType === id}
-                    className={mediaType === id ? "active" : ""}
-                    onClick={() => setMediaType(id)}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
               <div className="archive-controls">
                 <Select
                   label="Год"

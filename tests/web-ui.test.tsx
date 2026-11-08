@@ -130,22 +130,16 @@ describe("public UI", () => {
       screen.getByRole("button", { name: "Включить тёмную тему" }),
     ).toBeInTheDocument();
   });
-  it("shows empty home, media and filters video and images", async () => {
+  it("shows photos and videos together without type filters", () => {
     mockApi();
-    const user = userEvent.setup();
     mount(<PortalPage />, "/media");
     expect(
       screen.getByRole("img", { name: "Фото встречи" }),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Видео" }));
-    expect(screen.queryByRole("img", { name: "Фото встречи" })).toBeNull();
     expect(screen.getByLabelText("Видео встречи")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Фотографии" }));
-    expect(
-      screen.getByRole("img", { name: "Фото встречи" }),
-    ).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Все материалы" }));
-    expect(screen.getByLabelText("Видео встречи")).toBeInTheDocument();
+    for (const name of ["Все материалы", "Фотографии", "Видео"]) {
+      expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
+    }
   });
   it("shows actual empty states", () => {
     mockApi();
