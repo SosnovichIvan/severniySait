@@ -213,8 +213,17 @@ export function AdminPage({ themeToggle }: { themeToggle?: ReactNode }) {
     <main id="main" className="container admin">
       <h1 className="sr-only">Управление материалами сайта</h1>
       <div className="admin-toolbar">
-        <Link className="text-link" to="/">
-          ← Открыть сайт
+        <Link
+          className="header-brand"
+          to="/"
+          aria-label="Северный человек — главная"
+        >
+          <span className="header-brand-name" aria-hidden="true">
+            Северный<span>человек</span>
+          </span>
+          <span className="header-brand-short" aria-hidden="true">
+            СЧ
+          </span>
         </Link>
         <div className="admin-toolbar-actions">
           {themeToggle}

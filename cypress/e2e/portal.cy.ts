@@ -159,7 +159,7 @@ describe('Editorial workspace and channels',()=>{
   cy.contains('label','Короткое обозначение').find('input').type('ТК');
   cy.contains('button','Сохранить площадку').click();cy.contains('[role=status]','Площадка сохранена');
   const row=()=>cy.contains('.admin-row','Тестовый канал');row().should('contain','Черновик');
-  cy.contains('a','Открыть сайт').click();cy.get('footer').should('not.contain','Тестовый канал');
+  cy.get('[aria-label="Северный человек — главная"]').click();cy.get('footer').should('not.contain','Тестовый канал');
   cy.get('header [aria-label="Войти для редакции"]').click();cy.get('.tabs').contains('button','Площадки и каналы').click();
   row().contains('button','Опубликовать').click();row().should('contain','Опубликовано');
   row().contains('button','Редактировать').click();cy.contains('label','Описание площадки').find('textarea').clear().type('Обновлённое описание');
@@ -168,11 +168,11 @@ describe('Editorial workspace and channels',()=>{
   cy.viewport(390,844);cy.document().then(d=>expect(d.documentElement.scrollWidth).to.be.at.most(390));cy.screenshot('admin-channels-light-mobile',{capture:'fullPage'});
   cy.get('[aria-label="Включить тёмную тему"]').click();cy.screenshot('admin-channels-dark-mobile',{capture:'fullPage'});
   cy.viewport(1280,900);cy.screenshot('admin-channels-dark-desktop',{capture:'fullPage'});
-  cy.contains('a','Открыть сайт').click();cy.get('footer').contains('a','Тестовый канал').should('have.attr','href','https://example.org/editorial-test');
+  cy.get('[aria-label="Северный человек — главная"]').click();cy.get('footer').contains('a','Тестовый канал').should('have.attr','href','https://example.org/editorial-test');
   cy.visit('/links');cy.contains('.channel-card','Тестовый канал').should('contain','Обновлённое описание');
   cy.get('header [aria-label="Войти для редакции"]').click();cy.get('.tabs').contains('button','Площадки и каналы').click();
   row().contains('button','Снять с публикации').click();row().should('contain','Черновик');cy.reload();cy.get('.tabs').contains('button','Площадки и каналы').click();row().should('contain','Черновик');
-  cy.contains('a','Открыть сайт').click();cy.get('footer').should('not.contain','Тестовый канал');
+  cy.get('[aria-label="Северный человек — главная"]').click();cy.get('footer').should('not.contain','Тестовый канал');
   cy.get('header [aria-label="Войти для редакции"]').click();cy.get('.tabs').contains('button','Площадки и каналы').click();
   row().find('[aria-label="Удалить Тестовый канал"]').click();cy.get('dialog[role=alertdialog]').contains('button','Удалить').click();row().should('not.exist');
  });
