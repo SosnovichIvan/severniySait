@@ -14,6 +14,9 @@ import {
   Image,
   ChevronLeft,
   ChevronRight,
+  BookOpen,
+  Handshake,
+  Package,
 } from "lucide-react";
 import { loadContent, divisions } from "../../../shared/api";
 const channels = [
@@ -103,12 +106,11 @@ export function PortalPage() {
           </div>
           <section className="hero">
             <div className="hero-copy">
-              <p className="eyebrow">ЛЮДИ. СОБЫТИЯ. ГЕОГРАФИЯ.</p>
+              <p className="eyebrow">Истории, события и люди</p>
               <h1 aria-label="Северный человек">
                 Северный
                 <br />
                 <span>человек</span>
-                <span className="heading-dot">.</span>
               </h1>
               <p className="hero-description">
                 Материалы объединения, региональные подразделения и календарь
@@ -135,7 +137,10 @@ export function PortalPage() {
               <dl className="activity-list">
                 <div>
                   <dt>
-                    <span aria-hidden="true">01</span>Культура и просвещение
+                    <span aria-hidden="true">
+                      <BookOpen />
+                    </span>
+                    Культура и просвещение
                   </dt>
                   <dd>
                     Сохранение культурных традиций и воспитательные проекты для
@@ -144,7 +149,10 @@ export function PortalPage() {
                 </div>
                 <div>
                   <dt>
-                    <span aria-hidden="true">02</span>Социальные проекты
+                    <span aria-hidden="true">
+                      <Handshake />
+                    </span>
+                    Социальные проекты
                   </dt>
                   <dd>
                     Разработка и реализация общественных инициатив в рамках
@@ -153,7 +161,10 @@ export function PortalPage() {
                 </div>
                 <div>
                   <dt>
-                    <span aria-hidden="true">03</span>Помощь военнослужащим
+                    <span aria-hidden="true">
+                      <Package />
+                    </span>
+                    Помощь военнослужащим
                   </dt>
                   <dd>
                     Отдельное направление с 2022 года — поддержка военнослужащих
@@ -277,7 +288,9 @@ export function PortalPage() {
             {status}
             {data && data.media.length === 0 ? (
               <div className="editorial-empty">
-                <span className="outline-number">01</span>
+                <span className="outline-number" aria-hidden="true">
+                  <Image size={30} strokeWidth={1.4} />
+                </span>
                 <div>
                   <p className="eyebrow">МЕДИАТЕКА</p>
                   <h3>Здесь начинается хроника</h3>
@@ -286,7 +299,6 @@ export function PortalPage() {
                     публикации редакцией.
                   </p>
                 </div>
-                <Image size={36} strokeWidth={1} />
               </div>
             ) : (
               <div className="media-grid">
