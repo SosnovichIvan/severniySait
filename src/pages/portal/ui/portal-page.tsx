@@ -115,9 +115,10 @@ export function PortalPage() {
                 поддерживаем граждан.
               </p>
             </div>
-            <section className="hero-about" aria-labelledby="about-title">
-              <p className="eyebrow">ОБ ОБЪЕДИНЕНИИ</p>
-              <h2 id="about-title">Чем занимается «Северный человек»</h2>
+            <section
+              className="hero-about"
+              aria-label="Деятельность объединения"
+            >
               <p className="about-intro">
                 Объединение основано в 2022 году и работает через региональные
                 подразделения. Основные направления, заявленные на его сайте:
