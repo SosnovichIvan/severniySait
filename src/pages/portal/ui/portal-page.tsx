@@ -190,7 +190,6 @@ export function PortalPage() {
                   <br />
                   <span>Маваши</span>
                 </h2>
-                <p className="founder-years">1985 — 2026</p>
                 <p className="founder-fullname">Михаил Фёдорович Ниц</p>
                 <p className="founder-role">
                   Музыкант, автор песен и основатель «Северного человека».
@@ -225,11 +224,6 @@ export function PortalPage() {
                   <p>Основание объединения «Северный человек».</p>
                 </li>
               </ol>
-              <p>
-                25 октября 2026 года Михаил Маваши умер в Воронеже. Об этом
-                сообщили в его официальном канале; информацию подтвердили
-                информационные агентства.
-              </p>
               <p className="biography-sources">
                 Источники:{" "}
                 <a
@@ -238,13 +232,6 @@ export function PortalPage() {
                   rel="noreferrer"
                 >
                   биография РБК <ArrowUpRight size={12} />
-                </a>
-                <a
-                  href="https://m.interfax.ru/1124863"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Интерфакс <ArrowUpRight size={12} />
                 </a>
               </p>
             </div>
