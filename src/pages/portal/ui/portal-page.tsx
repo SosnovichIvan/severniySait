@@ -10,7 +10,6 @@ import {
   ArrowRight,
   Search,
   MapPin,
-  CalendarDays,
   Image,
   ChevronLeft,
   ChevronRight,
@@ -182,46 +181,44 @@ export function PortalPage() {
               </a>
             </section>
           </section>
-          <div className="quick-grid">
-            <Link to="/media">
-              <Image />
-              <span>
-                Медиа<small>Фото, видео и публикации</small>
-              </span>
-              <ArrowUpRight />
-            </Link>
-            <Link to="/divisions">
-              <MapPin />
-              <span>
-                Подразделения<small>Каталог региональных каналов</small>
-              </span>
-              <ArrowUpRight />
-            </Link>
-            <Link to="/calendar">
-              <CalendarDays />
-              <span>
-                Календарь событий<small>Анонсы и встречи по городам</small>
-              </span>
-              <ArrowUpRight />
-            </Link>
-          </div>
           <section
             className="founder-section"
             id="founder"
             aria-labelledby="founder-title"
           >
             <div className="founder-profile">
-              <p className="eyebrow">ОСНОВАТЕЛЬ ОБЪЕДИНЕНИЯ</p>
-              <h2 id="founder-title" aria-label="Михаил Маваши">
-                Михаил
-                <br />
-                <span>Маваши</span>
-              </h2>
-              <p className="founder-years">1985 — 2026</p>
-              <p className="founder-fullname">Михаил Фёдорович Ниц</p>
-              <p className="founder-role">
-                Музыкант, автор песен и основатель «Северного человека».
-              </p>
+              <figure className="founder-portrait">
+                <img
+                  src="/mikhail-mavashi.jpg"
+                  alt="Портрет Михаила Маваши"
+                  width="320"
+                  height="320"
+                  loading="lazy"
+                />
+                <figcaption>
+                  Фото из{" "}
+                  <a
+                    href="https://t.me/mikhailmavashi"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    официального Telegram-канала <ArrowUpRight size={12} />
+                  </a>
+                </figcaption>
+              </figure>
+              <div className="founder-identity">
+                <p className="eyebrow">ОСНОВАТЕЛЬ ОБЪЕДИНЕНИЯ</p>
+                <h2 id="founder-title" aria-label="Михаил Маваши">
+                  Михаил
+                  <br />
+                  <span>Маваши</span>
+                </h2>
+                <p className="founder-years">1985 — 2026</p>
+                <p className="founder-fullname">Михаил Фёдорович Ниц</p>
+                <p className="founder-role">
+                  Музыкант, автор песен и основатель «Северного человека».
+                </p>
+              </div>
             </div>
             <div className="founder-story">
               <h3>От музыки — к объединению</h3>

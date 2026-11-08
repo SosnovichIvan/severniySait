@@ -12,6 +12,10 @@ const css = await readFile(
 const logo = await readFile("public/logo.png");
 await mkdir("design", { recursive: true });
 await writeFile("design/logo.png", logo);
+await writeFile(
+  "design/mikhail-mavashi.jpg",
+  await readFile("public/mikhail-mavashi.jpg"),
+);
 const pages = [
   ["home", "/"],
   ["media", "/media"],
@@ -44,7 +48,8 @@ for (const theme of ["dark", "light"])
     );
     markup = markup
       .replaceAll('src="/logo.png"', 'src="logo.png"')
-      .replaceAll('href="/logo.png"', 'href="logo.png"');
+      .replaceAll('href="/logo.png"', 'href="logo.png"')
+      .replaceAll('src="/mikhail-mavashi.jpg"', 'src="mikhail-mavashi.jpg"');
     for (const [target, url] of pages)
       markup = markup.replaceAll(
         `href="${url}"`,
