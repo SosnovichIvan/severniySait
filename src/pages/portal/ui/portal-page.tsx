@@ -289,27 +289,6 @@ export function PortalPage() {
               </div>
             )}
           </section>
-          <section className="connection">
-            <div>
-              <p className="eyebrow">ПЛОЩАДКИ И КАНАЛЫ</p>
-              <h2>
-                Продолжение —<br />в медиапространстве.
-              </h2>
-              <p>Выберите удобную площадку для чтения материалов.</p>
-            </div>
-            <div>
-              {channels.slice(0, 3).map((c) => (
-                <a key={c.name} href={c.url} target="_blank" rel="noreferrer">
-                  <span className="channel-icon">{c.short}</span>
-                  <span>
-                    {c.name}
-                    <small>{c.note}</small>
-                  </span>
-                  <ArrowUpRight size={20} />
-                </a>
-              ))}
-            </div>
-          </section>
         </>
       ) : (
         <>
