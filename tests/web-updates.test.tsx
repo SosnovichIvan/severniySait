@@ -33,6 +33,7 @@ it("saves an explicit Moscow update time, preserves failed input, prevents overl
       jobs = [
         {
           ...JSON.parse(String(options.body)),
+          version: "1.2.3",
           id: "job",
           createdAt: "2026-11-08T00:00:00Z",
           status: "scheduled",
@@ -46,7 +47,7 @@ it("saves an explicit Moscow update time, preserves failed input, prevents overl
   expect(screen.getByRole("status")).toHaveTextContent("Загружаем");
   await screen.findByText(/Локальный режим/);
   const user = userEvent.setup();
-  await user.type(screen.getByLabelText("Версия обновления"), "1.2.3");
+  expect(screen.queryByLabelText("Версия обновления")).not.toBeInTheDocument();
   fireEvent.change(screen.getByLabelText("Дата и время обновления (МСК)"), {
     target: { value: "2026-12-01T03:00" },
   });
@@ -55,7 +56,9 @@ it("saves an explicit Moscow update time, preserves failed input, prevents overl
     screen.getByRole("button", { name: "Запланировать обновление" }),
   );
   expect(await screen.findByRole("alert")).toHaveTextContent("Нет связи");
-  expect(screen.getByLabelText("Версия обновления")).toHaveValue("1.2.3");
+  expect(screen.getByLabelText("Дата и время обновления (МСК)")).toHaveValue(
+    "2026-12-01T03:00",
+  );
   fail = false;
   await user.click(
     screen.getByRole("button", { name: "Запланировать обновление" }),
@@ -65,7 +68,6 @@ it("saves an explicit Moscow update time, preserves failed input, prevents overl
     .mocked(fetch)
     .mock.calls.find(([, options]) => options?.method === "POST")!;
   expect(JSON.parse(String(call[1]?.body))).toEqual({
-    version: "1.2.3",
     scheduledAt: "2026-12-01T00:00:00.000Z",
   });
   expect(

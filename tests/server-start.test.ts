@@ -98,3 +98,16 @@ it("honors production configuration", async () => {
   );
   expect(mocks.listen).toHaveBeenCalledWith(4567, "0.0.0.0");
 });
+
+it("supports an operator-pinned published version for disconnected environments", async () => {
+  vi.stubEnv("SESSION_SECRET", "s".repeat(40));
+  vi.stubEnv("ADMIN_PASSWORD_HASH", "hash");
+  vi.stubEnv("UPDATE_RELEASE_VERSION", "2.3.4");
+  vi.spyOn(process, "on").mockImplementation(() => process);
+  vi.spyOn(console, "log").mockImplementation(() => {});
+  await import("../server/start");
+  const options = mocks.create.mock.calls[0][0] as {
+    resolveDeploymentVersion: () => Promise<string>;
+  };
+  expect(await options.resolveDeploymentVersion()).toBe("2.3.4");
+});

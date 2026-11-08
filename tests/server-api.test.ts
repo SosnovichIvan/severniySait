@@ -13,6 +13,7 @@ let dir: string,
   store: Store,
   agent: ReturnType<typeof supertest.agent>,
   csrf: string;
+const resolvedVersion = vi.fn<() => Promise<string | null>>();
 const event = {
   title: "Открытая встреча",
   city: "Москва",
@@ -25,6 +26,7 @@ const png = Buffer.from(
   "base64",
 );
 beforeEach(async () => {
+  resolvedVersion.mockReset().mockResolvedValue("1.2.3");
   dir = await mkdtemp(join(tmpdir(), "sever-test-"));
   store = new Store(join(dir, "test.sqlite"));
   agent = supertest.agent(
@@ -33,6 +35,8 @@ beforeEach(async () => {
       uploadDir: join(dir, "uploads"),
       sessionSecret: "test-secret-only-32-characters-long",
       passwordHash: await hash("test-password", 4),
+      currentVersion: "1.0.0",
+      resolveDeploymentVersion: resolvedVersion,
     }),
   );
   csrf = (await agent.get("/api/session")).body.csrf;
@@ -695,7 +699,6 @@ it("manages channels with validation, authentication, persistence and one-time s
 it("schedules updates only for editors, prevents overlap, persists and cancels", async () => {
   expect((await agent.get("/api/admin/deployments")).status).toBe(401);
   const input = {
-    version: "1.2.3",
     scheduledAt: new Date(Date.now() + 120000).toISOString(),
   };
   const schedule = (body: object, token = csrf) =>
@@ -704,13 +707,11 @@ it("schedules updates only for editors, prevents overlap, persists and cancels",
   await login();
   expect((await agent.get("/api/admin/deployments")).body).toEqual({
     enabled: false,
-    currentVersion: "local",
+    currentVersion: "1.0.0",
     jobs: [],
   });
   expect((await schedule(input, "wrong")).status).toBe(403);
   for (const invalid of [
-    { version: "latest" },
-    { version: "1.2.3;echo x" },
     { scheduledAt: "bad" },
     { scheduledAt: new Date().toISOString() },
   ])
@@ -721,7 +722,7 @@ it("schedules updates only for editors, prevents overlap, persists and cancels",
   expect((await schedule(input)).status).toBe(409);
   expect(
     (await agent.get("/api/admin/deployments")).body.jobs[0],
-  ).toMatchObject({ ...input, id, status: "scheduled" });
+  ).toMatchObject({ ...input, version: "1.2.3", id, status: "scheduled" });
   expect((await agent.get("/api/content")).body).not.toHaveProperty("jobs");
   expect(
     (
@@ -760,4 +761,20 @@ it("keeps public API available during editorial publication changes", async () =
   );
   expect(results.every((result) => result.status === 200)).toBe(true);
   expect(store.list(true).events[0].id).toBe(id);
+});
+
+it("does not schedule unavailable, identical or older releases, and hides registry failures", async () => {
+  await login();
+  const body = { scheduledAt: new Date(Date.now() + 120000).toISOString() };
+  const schedule = () =>
+    agent.post("/api/admin/deployments").set("x-csrf-token", csrf).send(body);
+  for (const version of [null, "1.0.0", "0.9.9"]) {
+    resolvedVersion.mockResolvedValue(version);
+    expect((await schedule()).status).toBe(409);
+  }
+  resolvedVersion.mockRejectedValue(new Error("private registry internals"));
+  const failed = await schedule();
+  expect(failed.status).toBe(503);
+  expect(failed.body.error).not.toContain("private registry");
+  expect(store.deployments()).toEqual([]);
 });

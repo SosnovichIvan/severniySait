@@ -81,10 +81,10 @@ export const deploymentVersion = z
   .string()
   .regex(/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/);
 export const deploymentInput = z.object({
-  version: deploymentVersion,
   scheduledAt: z.iso.datetime({ offset: true }),
 });
 export const deploymentSchema = deploymentInput.extend({
+  version: deploymentVersion,
   id: z.string(),
   createdAt: z.string(),
   status: z.enum(["scheduled", "running", "succeeded", "failed", "cancelled"]),

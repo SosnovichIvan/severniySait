@@ -11,7 +11,6 @@ const statusNames = {
 };
 export function UpdateEditor({ csrf }: { csrf: string }) {
   const client = useQueryClient();
-  const [version, setVersion] = useState("");
   const [time, setTime] = useState("");
   const [notice, setNotice] = useState("");
   const updates = useQuery({
@@ -38,7 +37,7 @@ export function UpdateEditor({ csrf }: { csrf: string }) {
       await send(
         "/api/admin/deployments",
         "POST",
-        { version, scheduledAt: new Date(`${time}:00+03:00`).toISOString() },
+        { scheduledAt: new Date(`${time}:00+03:00`).toISOString() },
         csrf,
       );
       setNotice("Обновление запланировано.");
@@ -91,24 +90,6 @@ export function UpdateEditor({ csrf }: { csrf: string }) {
             <section className="panel editor">
               <h3>Назначить обновление</h3>
               <form onSubmit={schedule}>
-                <label>
-                  Версия обновления
-                  <input
-                    required
-                    aria-label="Версия обновления"
-                    aria-describedby="update-version-help"
-                    maxLength={32}
-                    pattern="(0|[1-9][0-9]*)[.](0|[1-9][0-9]*)[.](0|[1-9][0-9]*)"
-                    placeholder="Например, 0.1.0"
-                    value={version}
-                    onChange={(event) => setVersion(event.target.value)}
-                    disabled={mutation.isPending || busy}
-                  />
-                  <small id="update-version-help">
-                    Номер готовой опубликованной версии. Незавершённые изменения
-                    сюда не попадают.
-                  </small>
-                </label>
                 <label>
                   Дата и время обновления (МСК)
                   <input

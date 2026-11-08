@@ -10,6 +10,7 @@ const env = {
   PORT: "3002",
   DATABASE_PATH: join(dir, "db.sqlite"),
   UPLOAD_DIR: join(dir, "uploads"),
+  UPDATE_RELEASE_VERSION: "1.2.3",
   SESSION_SECRET: "test-only-session-secret-with-32-characters",
   ADMIN_PASSWORD_HASH: await hash("e2e-password", 4),
   API_TARGET: "http://127.0.0.1:3002",

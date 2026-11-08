@@ -1,4 +1,8 @@
 import express from "express";
+import {
+  compareReleaseVersions,
+  latestRelease,
+} from "../domain/latest-release.js";
 import session from "express-session";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
@@ -16,6 +20,7 @@ import {
   publicationInput,
   publicationKind,
   deploymentInput,
+  deploymentVersion,
 } from "../../contracts/content.js";
 import { Store } from "../repository/store.js";
 import { SqliteSessions } from "../repository/session-store.js";
@@ -28,6 +33,7 @@ export type AppOptions = {
   production?: boolean;
   deploymentEnabled?: boolean;
   currentVersion?: string;
+  resolveDeploymentVersion?: () => Promise<string | null>;
 };
 export function createApp(options: AppOptions) {
   const app = express();
@@ -129,15 +135,32 @@ export function createApp(options: AppOptions) {
       jobs: options.store.deployments(),
     }),
   );
-  app.post("/api/admin/deployments", (req, res) => {
+  app.post("/api/admin/deployments", async (req, res) => {
     const input = deploymentInput.parse(req.body);
     const now = new Date();
     if (new Date(input.scheduledAt).getTime() < now.getTime() + 60000)
       return res
         .status(400)
         .json({ error: "Выберите время минимум на минуту позже текущего." });
+    let version: string | null;
+    try {
+      version = await (options.resolveDeploymentVersion ?? latestRelease)();
+    } catch {
+      return res.status(503).json({
+        error: "Не удалось проверить готовые обновления. Повторите позже.",
+      });
+    }
+    if (
+      !version ||
+      (options.currentVersion &&
+        deploymentVersion.safeParse(options.currentVersion).success &&
+        compareReleaseVersions(version, options.currentVersion) <= 0)
+    )
+      return res
+        .status(409)
+        .json({ error: "Готовых опубликованных обновлений пока нет." });
     const id = options.store.scheduleDeployment(
-      input.version,
+      version,
       new Date(input.scheduledAt).toISOString(),
       now.toISOString(),
     );
