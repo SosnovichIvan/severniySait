@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { loadContent } from "../shared/api";
 import { useEffect, useState } from "react";
 import { Link, NavLink, Routes, Route, useLocation } from "react-router-dom";
-import { Sun, Moon, Menu, X, ArrowUpRight } from "lucide-react";
+import { Sun, Moon, Menu, X, ArrowUpRight, LogIn } from "lucide-react";
 import { PortalPage } from "../pages/portal";
 import { AdminPage } from "../pages/admin";
 const links = [
@@ -51,13 +51,26 @@ export function App() {
               </NavLink>
             ))}
           </nav>
-          <button
-            className="icon-button theme-toggle"
-            aria-label={dark ? "Включить светлую тему" : "Включить тёмную тему"}
-            onClick={() => setDark(!dark)}
-          >
-            {dark ? <Sun size={19} /> : <Moon size={19} />}
-          </button>
+          <div className="header-actions">
+            <Link
+              className="editor-login"
+              to="/admin"
+              aria-label="Войти для редакции"
+              title="Войти для редакции"
+            >
+              <LogIn size={18} aria-hidden="true" />
+              Войти
+            </Link>
+            <button
+              className="icon-button theme-toggle"
+              aria-label={
+                dark ? "Включить светлую тему" : "Включить тёмную тему"
+              }
+              onClick={() => setDark(!dark)}
+            >
+              {dark ? <Sun size={19} /> : <Moon size={19} />}
+            </button>
+          </div>
           <button
             className="icon-button menu-toggle"
             aria-label={open ? "Закрыть меню" : "Открыть меню"}
@@ -98,9 +111,6 @@ export function App() {
                 Истории объединения, материалы из регионов и календарь событий —
                 в одном пространстве.
               </p>
-              <Link className="footer-editor" to="/admin">
-                Вход для редакции <ArrowUpRight size={16} />
-              </Link>
             </div>
             <nav className="footer-navigation" aria-label="Навигация в футере">
               <h2>Разделы</h2>
