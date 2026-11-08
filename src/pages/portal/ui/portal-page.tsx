@@ -93,7 +93,6 @@ export function PortalPage() {
         <>
           <section className="hero">
             <div className="hero-copy">
-              <p className="eyebrow">Истории, события и люди</p>
               <div className="hero-heading">
                 <h1 aria-label="Северный человек">
                   Северный <span>человек</span>

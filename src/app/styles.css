@@ -186,7 +186,6 @@ textarea:focus-visible {
   grid-template-columns: minmax(0, 1fr) clamp(160px, 20vw, 240px);
   align-items: center;
   gap: 40px;
-  margin-top: 28px;
 }
 .hero h1 {
   font-family: var(--serif);
@@ -971,7 +970,6 @@ textarea {
   .hero-heading {
     grid-template-columns: minmax(0, 1fr) clamp(64px, 22vw, 120px);
     gap: 16px;
-    margin-top: 25px;
   }
   .hero h1 {
     font-size: clamp(30px, 9.2vw, 54px);
@@ -1299,11 +1297,6 @@ textarea,
   width: 18px;
   height: 18px;
   stroke-width: 1.6;
-}
-.hero-copy > .eyebrow {
-  text-transform: none;
-  letter-spacing: 0.2px;
-  font-size: 14px;
 }
 .page-intro h1 {
   font-family: var(--serif);
