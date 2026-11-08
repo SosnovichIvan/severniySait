@@ -189,7 +189,7 @@ export function PortalPage() {
                 </figcaption>
               </figure>
               <div className="founder-identity">
-                <p className="eyebrow">ОСНОВАТЕЛЬ ОБЪЕДИНЕНИЯ</p>
+                <p className="eyebrow">ЛИДЕР И ОСНОВАТЕЛЬ</p>
                 <h2 id="founder-title" aria-label="Михаил Маваши">
                   Михаил
                   <br />
@@ -197,7 +197,8 @@ export function PortalPage() {
                 </h2>
                 <p className="founder-fullname">Михаил Фёдорович Ниц</p>
                 <p className="founder-role">
-                  Музыкант, автор песен и основатель «Северного человека».
+                  Наш бессменный лидер и основатель объединения «Северный
+                  человек».
                 </p>
               </div>
             </div>
