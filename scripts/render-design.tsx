@@ -10,7 +10,6 @@ const css = await readFile(
   "utf8",
 );
 const logo = await readFile("public/logo.png");
-const svg = Buffer.from(await readFile("public/north.svg")).toString("base64");
 await mkdir("design", { recursive: true });
 await writeFile("design/logo.png", logo);
 const pages = [
@@ -42,14 +41,6 @@ for (const theme of ["dark", "light"])
           <App />
         </MemoryRouter>
       </QueryClientProvider>,
-    );
-    markup = markup.replaceAll(
-      'src="/north.svg"',
-      `src="data:image/svg+xml;base64,${svg}"`,
-    );
-    markup = markup.replaceAll(
-      'href="/north.svg"',
-      `href="data:image/svg+xml;base64,${svg}"`,
     );
     markup = markup
       .replaceAll('src="/logo.png"', 'src="logo.png"')

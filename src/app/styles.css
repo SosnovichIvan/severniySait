@@ -227,63 +227,58 @@ textarea:focus-visible {
 .hero-copy > .text-link {
   margin-left: 23px;
 }
-.hero-art {
-  position: relative;
-  min-height: 460px;
-  overflow: hidden;
-  background: #294b3e;
+.hero-about {
+  padding: 32px;
+  border: 1px solid var(--line);
+  background: var(--surface);
 }
-.hero-art > img {
-  height: 100%;
-  width: 100%;
-  object-fit: cover;
-  position: absolute;
-  inset: 0;
+.hero-about h2 {
+  font-size: clamp(26px, 2.6vw, 36px);
+  line-height: 1.15;
+  letter-spacing: -1px;
+  margin: 20px 0 16px;
 }
-.art-top {
+.about-intro {
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+.activity-list {
+  margin: 24px 0;
+}
+.activity-list > div {
+  border-top: 1px solid var(--line);
+  padding: 16px 0;
+}
+.activity-list > div:last-child {
+  padding-bottom: 0;
+}
+.activity-list dt {
   display: flex;
-  justify-content: space-between;
-  position: absolute;
-  top: 24px;
-  left: 25px;
-  right: 25px;
-  color: #1d382c;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 2px;
+  gap: 16px;
+  font-size: 16px;
+  font-weight: 600;
 }
-.art-bottom {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(transparent, #0b241ef0);
-  display: flex;
+.activity-list dt span {
+  color: var(--accent);
+  font-size: 12px;
+  line-height: 24px;
+  font-weight: 500;
+}
+.activity-list dd {
+  margin: 7px 0 0 32px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.about-source {
+  display: inline-flex;
   align-items: center;
-  gap: 18px;
-  color: #e8eee5;
-  padding: 60px 24px 27px;
-  font-size: 9px;
-  letter-spacing: 1.4px;
-  line-height: 2;
-}
-.art-bottom strong {
-  font-size: 18px;
-  font-weight: 400;
-  letter-spacing: 0;
-}
-.compass {
-  font-size: 48px;
-  line-height: 1;
-}
-.circle-button {
-  margin-left: auto;
-  width: 43px;
-  height: 43px;
-  display: grid;
-  place-items: center;
-  border: 1px solid #a3b8a8;
-  border-radius: 50%;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 .quick-grid {
   display: grid;
@@ -874,9 +869,6 @@ textarea {
     margin: 22px 0 0;
     display: flex;
   }
-  .hero-art {
-    min-height: 470px;
-  }
   .division-grid {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -921,15 +913,15 @@ textarea {
   .hero {
     gap: 24px;
   }
+  .hero-about {
+    padding: 24px;
+  }
   .hero h1 {
     font-size: 62px;
     letter-spacing: -3px;
   }
   .hero-description {
     font-size: 13px;
-  }
-  .hero-art {
-    min-height: 420px;
   }
   .quick-grid > a {
     padding: 22px 14px;
@@ -1004,9 +996,6 @@ textarea {
   .hero .button {
     font-size: 11px;
     padding-inline: 16px;
-  }
-  .hero-art {
-    min-height: 340px;
   }
   .quick-grid {
     grid-template-columns: 1fr;

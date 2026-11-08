@@ -121,31 +121,55 @@ export function PortalPage() {
                 Найти подразделение <ArrowRight size={16} />
               </Link>
             </div>
-            <div className="hero-art">
-              <img
-                src="/north.svg"
-                alt="Графическая иллюстрация северного леса и гор"
-              />
-              <div className="art-top">
-                <span>СЕВЕРНЫЙ / ЖУРНАЛ</span>
-                <span>01 — {new Date().getFullYear()}</span>
-              </div>
-              <div className="art-bottom">
-                <span className="compass">✳</span>
+            <section className="hero-about" aria-labelledby="about-title">
+              <p className="eyebrow">ОБ ОБЪЕДИНЕНИИ</p>
+              <h2 id="about-title">
+                Чем занимается
+                <br />
+                «Северный человек»
+              </h2>
+              <p className="about-intro">
+                Объединение основано в 2022 году и работает через региональные
+                подразделения. Основные направления, заявленные на его сайте:
+              </p>
+              <dl className="activity-list">
                 <div>
-                  ГЕОГРАФИЯ ОБЪЕДИНЕНИЯ
-                  <br />
-                  <strong>От региона к региону</strong>
+                  <dt>
+                    <span aria-hidden="true">01</span>Культура и просвещение
+                  </dt>
+                  <dd>
+                    Сохранение культурных традиций и воспитательные проекты для
+                    молодёжи и взрослых.
+                  </dd>
                 </div>
-                <Link
-                  to="/divisions"
-                  aria-label="Посмотреть подразделения"
-                  className="circle-button"
-                >
-                  <ArrowUpRight />
-                </Link>
-              </div>
-            </div>
+                <div>
+                  <dt>
+                    <span aria-hidden="true">02</span>Социальные проекты
+                  </dt>
+                  <dd>
+                    Разработка и реализация общественных инициатив в рамках
+                    устава объединения.
+                  </dd>
+                </div>
+                <div>
+                  <dt>
+                    <span aria-hidden="true">03</span>Помощь военнослужащим
+                  </dt>
+                  <dd>
+                    Отдельное направление с 2022 года — поддержка военнослужащих
+                    и добровольцев СВО.
+                  </dd>
+                </div>
+              </dl>
+              <a
+                className="about-source"
+                href="https://северныйчеловек.рф/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                По материалам сайта объединения <ArrowUpRight size={14} />
+              </a>
+            </section>
           </section>
           <div className="quick-grid">
             <Link to="/media">

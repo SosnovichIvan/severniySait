@@ -78,7 +78,7 @@ describe("public UI", () => {
     const user = userEvent.setup();
     mount(<App />);
     expect(
-      screen.getByRole("heading", { name: /Северный человек/ }),
+      screen.getByRole("heading", { level: 1, name: /Северный человек/ }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("img", { name: "Фото встречи" }),
