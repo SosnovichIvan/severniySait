@@ -27,7 +27,26 @@ session = await call("/api/login", {
 try {
   const current = contentSchema.parse(await call("/api/admin/content"));
   for (const entry of [...archive].reverse()) {
-    if (current.media.some((m) => m.description.includes(entry.sourceUrl))) {
+    const existing = current.media.find((m) =>
+      m.description.includes(entry.sourceUrl),
+    );
+    if (existing) {
+      // Fill only missing dates; preserve editor-authored content and known dates.
+      if (!existing.eventDate) {
+        await call(`/api/admin/media/${existing.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "x-csrf-token": session.csrf,
+          },
+          body: JSON.stringify({
+            title: existing.title,
+            description: existing.description,
+            published: existing.published,
+            eventDate: entry.eventDate,
+          }),
+        });
+      }
       console.log(`Already imported: ${entry.key}`);
       continue;
     }
@@ -35,10 +54,15 @@ try {
     body.set("title", entry.title);
     body.set("description", entry.description);
     body.set("published", "true");
+    body.set("eventDate", entry.eventDate);
     body.set(
       "file",
       new Blob([await readFile(`content/media/${entry.file}`)], {
-        type: entry.file.endsWith(".webp") ? "image/webp" : "image/jpeg",
+        type: entry.file.endsWith(".webp")
+          ? "image/webp"
+          : entry.file.endsWith(".png")
+            ? "image/png"
+            : "image/jpeg",
       }),
       entry.file,
     );

@@ -113,6 +113,7 @@ export function AdminPage() {
           {
             title: String(form.get("title")),
             description: String(form.get("description")),
+            eventDate: String(form.get("eventDate") ?? ""),
             published: form.get("published") === "on",
           },
           csrf,
@@ -393,6 +394,18 @@ export function AdminPage() {
                   maxLength={160}
                   defaultValue={mediaEdit?.title}
                 />
+              </label>
+              <label>
+                Дата материала
+                <input
+                  type="date"
+                  name="eventDate"
+                  defaultValue={mediaEdit?.eventDate ?? ""}
+                />
+                <small>
+                  Дата события, а для архивной публикации — её дата. Можно
+                  оставить пустой, если дата неизвестна.
+                </small>
               </label>
               <label>
                 Описание

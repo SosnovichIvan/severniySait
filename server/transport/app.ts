@@ -129,7 +129,7 @@ export function createApp(options: AppOptions) {
   });
   const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 30 * 1024 * 1024, files: 1, fields: 3 },
+    limits: { fileSize: 30 * 1024 * 1024, files: 1, fields: 4 },
   });
   app.post(
     "/api/admin/media",

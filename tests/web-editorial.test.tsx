@@ -23,3 +23,34 @@ describe("editorial sources", () => {
     );
   });
 });
+
+import { sortMedia } from "../src/shared/lib/media-chronology";
+import type { MediaRecord } from "../contracts/content";
+it("orders the historical archive in both directions and keeps unknown dates last", () => {
+  const media = [undefined, "2026-11-08", "2022-11-27", "", "2022-11-27"].map(
+    (eventDate, index): MediaRecord => ({
+      id: String(index),
+      title: "Архив",
+      description: "",
+      url: "/x.jpg",
+      kind: "image",
+      published: true,
+      eventDate,
+    }),
+  );
+  expect(sortMedia(media, "asc").map((m) => m.id)).toEqual([
+    "2",
+    "4",
+    "1",
+    "0",
+    "3",
+  ]);
+  expect(sortMedia(media, "desc").map((m) => m.id)).toEqual([
+    "1",
+    "2",
+    "4",
+    "0",
+    "3",
+  ]);
+  expect(media.map((m) => m.id)).toEqual(["0", "1", "2", "3", "4"]);
+});

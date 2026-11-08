@@ -23,6 +23,7 @@ const event = {
 const photo = {
   id: "photo",
   title: "Фото встречи",
+  eventDate: "2026-09-06",
   description: "Описание фотографии",
   url: "/uploads/one.png",
   kind: "image",

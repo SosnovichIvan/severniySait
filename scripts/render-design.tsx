@@ -24,6 +24,7 @@ for (const entry of archive) {
   );
 }
 const editorialMedia = archive.map((entry) => ({
+  eventDate: entry.eventDate,
   id: entry.key,
   title: entry.title,
   description: entry.description,

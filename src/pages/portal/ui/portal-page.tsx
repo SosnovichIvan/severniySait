@@ -1,3 +1,4 @@
+import { sortMedia } from "../../../shared/lib/media-chronology";
 import { TextWithLinks } from "../../../shared/ui/text-with-links";
 import {
   getMoscowDate,
@@ -53,6 +54,23 @@ export function PortalPage() {
   });
   const [search, setSearch] = useState("");
   const [mediaType, setMediaType] = useState("all");
+  const [mediaYear, setMediaYear] = useState("all");
+  const [mediaOrder, setMediaOrder] = useState<"asc" | "desc">("asc");
+  const mediaYears = [
+    ...new Set(
+      data?.media.flatMap((m) =>
+        m.eventDate ? [m.eventDate.slice(0, 4)] : [],
+      ),
+    ),
+  ].sort();
+  const archiveMedia = sortMedia(
+    (data?.media ?? []).filter(
+      (m) =>
+        (mediaType === "all" || m.kind === mediaType) &&
+        (mediaYear === "all" || m.eventDate?.startsWith(mediaYear)),
+    ),
+    mediaOrder,
+  );
   const today = useMoscowToday();
   const [month, setMonth] = useState(
     () => new Date(today.year, today.month, 1),
@@ -300,27 +318,29 @@ export function PortalPage() {
               </div>
             ) : (
               <div className="media-grid">
-                {data?.media.slice(0, 3).map((m) => (
-                  <article className="media-card" key={m.id}>
-                    {m.kind === "video" ? (
-                      <video
-                        controls
-                        preload="metadata"
-                        src={m.url}
-                        aria-label={m.title}
-                      />
-                    ) : (
-                      <img src={m.url} alt={m.title} loading="lazy" />
-                    )}
-                    <p className="eyebrow">
-                      {m.kind === "video" ? "ВИДЕО" : "МАТЕРИАЛ"}
-                    </p>
-                    <h3>{m.title}</h3>
-                    <p>
-                      <TextWithLinks text={m.description} />
-                    </p>
-                  </article>
-                ))}
+                {sortMedia(data?.media ?? [], "desc")
+                  .slice(0, 3)
+                  .map((m) => (
+                    <article className="media-card" key={m.id}>
+                      {m.kind === "video" ? (
+                        <video
+                          controls
+                          preload="metadata"
+                          src={m.url}
+                          aria-label={m.title}
+                        />
+                      ) : (
+                        <img src={m.url} alt={m.title} loading="lazy" />
+                      )}
+                      <p className="eyebrow">
+                        {m.kind === "video" ? "ВИДЕО" : "МАТЕРИАЛ"}
+                      </p>
+                      <h3>{m.title}</h3>
+                      <p>
+                        <TextWithLinks text={m.description} />
+                      </p>
+                    </article>
+                  ))}
               </div>
             )}
           </section>
@@ -362,7 +382,7 @@ export function PortalPage() {
                 : path === "/calendar"
                   ? "Опубликованные редакцией анонсы. Время событий указано по Москве."
                   : path === "/media"
-                    ? "Фотографии, видео и материалы редакции."
+                    ? "Хроника с 2022 года: события, фотографии и публикации объединения."
                     : "Подтверждённые ссылки на каналы и площадки."}
             </p>
           </div>
@@ -425,41 +445,64 @@ export function PortalPage() {
                   </button>
                 ))}
               </div>
-              <div className="media-grid">
-                {data?.media
-                  .filter((m) => mediaType === "all" || m.kind === mediaType)
-                  .map((m) => (
-                    <article className="media-card" key={m.id}>
-                      {m.kind === "video" ? (
-                        <video
-                          controls
-                          preload="metadata"
-                          src={m.url}
-                          aria-label={m.title}
-                        />
-                      ) : (
-                        <a href={m.url} target="_blank" rel="noreferrer">
-                          <img src={m.url} alt={m.title} loading="lazy" />
-                        </a>
-                      )}
-                      <p className="eyebrow">
-                        {m.kind === "video" ? "ВИДЕО" : "МАТЕРИАЛ"}
-                      </p>
-                      <h3>{m.title}</h3>
-                      <p>
-                        <TextWithLinks text={m.description} />
-                      </p>
-                    </article>
-                  ))}
+              <div className="archive-controls">
+                <label>
+                  Год
+                  <select
+                    value={mediaYear}
+                    onChange={(e) => setMediaYear(e.target.value)}
+                  >
+                    <option value="all">Все годы</option>
+                    {mediaYears.map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Порядок
+                  <select
+                    value={mediaOrder}
+                    onChange={(e) =>
+                      setMediaOrder(e.target.value as "asc" | "desc")
+                    }
+                  >
+                    <option value="asc">От истоков к сегодняшнему дню</option>
+                    <option value="desc">Сначала новые</option>
+                  </select>
+                </label>
               </div>
-              {data &&
-                !data.media.some(
-                  (m) => mediaType === "all" || m.kind === mediaType,
-                ) && (
-                  <p className="empty">
-                    Материалы в этом разделе пока не опубликованы.
-                  </p>
-                )}
+              <div className="media-grid">
+                {archiveMedia.map((m) => (
+                  <article className="media-card" key={m.id}>
+                    {m.kind === "video" ? (
+                      <video
+                        controls
+                        preload="metadata"
+                        src={m.url}
+                        aria-label={m.title}
+                      />
+                    ) : (
+                      <a href={m.url} target="_blank" rel="noreferrer">
+                        <img src={m.url} alt={m.title} loading="lazy" />
+                      </a>
+                    )}
+                    <p className="eyebrow">
+                      {m.kind === "video" ? "ВИДЕО" : "МАТЕРИАЛ"}
+                    </p>
+                    <h3>{m.title}</h3>
+                    <p>
+                      <TextWithLinks text={m.description} />
+                    </p>
+                  </article>
+                ))}
+              </div>
+              {data && !archiveMedia.length && (
+                <p className="empty">
+                  Материалы в этом разделе пока не опубликованы.
+                </p>
+              )}
             </>
           )}
           {path === "/calendar" && (

@@ -7,6 +7,7 @@ export const eventInput = z.object({
   published: z.boolean(),
 });
 export const mediaInput = z.object({
+  eventDate: z.iso.date().or(z.literal("")).optional(),
   title: z.string().trim().min(3).max(160),
   description: z.string().trim().max(4000),
   published: z.boolean(),

@@ -282,7 +282,7 @@ describe("API and storage", () => {
     expect(second.db.pragma("integrity_check", { simple: true })).toBe("ok");
     expect(second.db.pragma("foreign_key_check")).toEqual([]);
     expect(second.db.pragma("foreign_keys", { simple: true })).toBe(1);
-    expect(second.db.prepare("SELECT * FROM migrations").all()).toHaveLength(1);
+    expect(second.db.prepare("SELECT * FROM migrations").all()).toHaveLength(2);
     second.close();
     const sessions = new SqliteSessions(store);
     sessions.get("missing", (_e, v) => expect(v).toBeNull());
@@ -318,4 +318,50 @@ describe("API and storage", () => {
       ).status,
     ).toBe(429);
   });
+});
+
+it("validates archive dates, persists them and preserves them for older editors", async () => {
+  await login();
+  const response = await agent
+    .post("/api/admin/media")
+    .set("x-csrf-token", csrf)
+    .field("title", "Архивная встреча")
+    .field("description", "Описание")
+    .field("published", "true")
+    .field("eventDate", "2022-12-25")
+    .attach("file", png, "archive.png");
+  expect(response.status).toBe(201);
+  const id = response.body.id;
+  const input = {
+    title: "Обновлённый архив",
+    description: "Текст",
+    published: true,
+  };
+  expect(store.list().media[0].eventDate).toBe("2022-12-25");
+  expect(
+    (
+      await agent
+        .put(`/api/admin/media/${id}`)
+        .set("x-csrf-token", csrf)
+        .send(input)
+    ).status,
+  ).toBe(200);
+  expect(store.list().media[0].eventDate).toBe("2022-12-25");
+  expect(
+    (
+      await agent
+        .put(`/api/admin/media/${id}`)
+        .set("x-csrf-token", csrf)
+        .send({ ...input, eventDate: "2023-02-30" })
+    ).status,
+  ).toBe(400);
+  expect(
+    (
+      await agent
+        .put(`/api/admin/media/${id}`)
+        .set("x-csrf-token", csrf)
+        .send({ ...input, eventDate: "" })
+    ).status,
+  ).toBe(200);
+  expect(store.list().media[0].eventDate).toBe("");
 });

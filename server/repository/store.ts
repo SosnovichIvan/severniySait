@@ -19,6 +19,11 @@ export class Store {
       CREATE TABLE IF NOT EXISTS media(id TEXT PRIMARY KEY,title TEXT NOT NULL,description TEXT NOT NULL,url TEXT NOT NULL UNIQUE,kind TEXT NOT NULL CHECK(kind IN ('image','video')),published INTEGER NOT NULL CHECK(published IN (0,1)));
       CREATE TABLE IF NOT EXISTS sessions(sid TEXT PRIMARY KEY,data TEXT NOT NULL,expires INTEGER NOT NULL);
       INSERT OR IGNORE INTO migrations VALUES(1);`);
+      if (!this.db.prepare("SELECT 1 FROM migrations WHERE version=2").get()) {
+        this.db.exec(
+          "ALTER TABLE media ADD COLUMN eventDate TEXT NOT NULL DEFAULT ''; INSERT INTO migrations VALUES(2);",
+        );
+      }
     })();
   }
   list(admin = false) {
@@ -54,20 +59,33 @@ export class Store {
     const id = randomUUID();
     this.db
       .prepare(
-        "INSERT INTO media VALUES(@id,@title,@description,@url,@kind,@published)",
+        "INSERT INTO media(id,title,description,url,kind,published,eventDate) VALUES(@id,@title,@description,@url,@kind,@published,@eventDate)",
       )
-      .run({ ...input, id, published: +input.published });
+      .run({
+        ...input,
+        eventDate: input.eventDate ?? "",
+        id,
+        published: +input.published,
+      });
     return id;
   }
   updateMedia(
     id: string,
-    input: Pick<MediaRecord, "title" | "description" | "published">,
+    input: Pick<
+      MediaRecord,
+      "title" | "description" | "published" | "eventDate"
+    >,
   ) {
     return this.db
       .prepare(
-        "UPDATE media SET title=@title,description=@description,published=@published WHERE id=@id",
+        "UPDATE media SET title=@title,description=@description,published=@published,eventDate=coalesce(@eventDate,eventDate) WHERE id=@id",
       )
-      .run({ ...input, id, published: +input.published }).changes;
+      .run({
+        ...input,
+        eventDate: input.eventDate ?? null,
+        id,
+        published: +input.published,
+      }).changes;
   }
   deleteEvent(id: string) {
     return this.db.prepare("DELETE FROM events WHERE id=?").run(id).changes;
