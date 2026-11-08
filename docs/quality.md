@@ -39,4 +39,4 @@ CI с ошибкой. Неуспешные/cancelled/skipped checks отклон
 | --- | --- | --- |
 | src | 100.0% | 97.06% |
 | server | 99.35% | 95.12% |
-| contracts | 100.0% | N/A% |
+| contracts | 100.0% | N/A |
