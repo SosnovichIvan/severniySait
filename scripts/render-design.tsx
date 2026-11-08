@@ -9,9 +9,10 @@ const css = await readFile(
   `.preview/assets/${files.find((f) => f.endsWith(".css"))}`,
   "utf8",
 );
-const logo = (await readFile("public/logo.png")).toString("base64");
+const logo = await readFile("public/logo.png");
 const svg = Buffer.from(await readFile("public/north.svg")).toString("base64");
 await mkdir("design", { recursive: true });
+await writeFile("design/logo.png", logo);
 const pages = [
   ["home", "/"],
   ["media", "/media"],
@@ -51,8 +52,8 @@ for (const theme of ["dark", "light"])
       `href="data:image/svg+xml;base64,${svg}"`,
     );
     markup = markup
-      .replaceAll('src="/logo.png"', `src="data:image/png;base64,${logo}"`)
-      .replaceAll('href="/logo.png"', `href="data:image/png;base64,${logo}"`);
+      .replaceAll('src="/logo.png"', 'src="logo.png"')
+      .replaceAll('href="/logo.png"', 'href="logo.png"');
     for (const [target, url] of pages)
       markup = markup.replaceAll(
         `href="${url}"`,
@@ -69,7 +70,7 @@ const entry = await readFile("index.html", "utf8");
 const bootStyles = entry.match(/<style>([\s\S]*?)<\/style>/)![1];
 const splash = entry
   .match(/<div\s+id="boot-splash"[\s\S]*?<\/div>/)![0]
-  .replace('src="/logo.png"', `src="data:image/png;base64,${logo}"`);
+  .replace('src="/logo.png"', 'src="logo.png"');
 await writeFile(
   "design/loading.html",
   `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Северный человек · загрузка</title><style>${bootStyles}</style></head><body>${splash}</body></html>`,
