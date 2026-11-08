@@ -8,7 +8,11 @@ import { mkdir, writeFile, unlink } from "node:fs/promises";
 import { resolve, basename } from "node:path";
 import { compare } from "bcryptjs";
 import { z } from "zod";
-import { eventInput, mediaInput } from "../../contracts/content.js";
+import {
+  eventInput,
+  mediaInput,
+  divisionInput,
+} from "../../contracts/content.js";
 import { Store } from "../repository/store.js";
 import { SqliteSessions } from "../repository/session-store.js";
 import { identifyMedia } from "../domain/media-file.js";
@@ -112,6 +116,10 @@ export function createApp(options: AppOptions) {
   app.get("/api/admin/content", (_req, res) =>
     res.json(options.store.list(true)),
   );
+  app.put("/api/admin/divisions", (req, res) => {
+    options.store.saveDivision(divisionInput.parse(req.body));
+    res.json({ ok: true });
+  });
   app.post("/api/admin/events", (req, res) => {
     const input = eventInput.parse(req.body);
     res.status(201).json({ id: options.store.saveEvent(input) });

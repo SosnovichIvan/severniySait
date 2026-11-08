@@ -1,4 +1,22 @@
 import { z } from "zod";
+import divisionCatalog from "./divisions.json" with { type: "json" };
+export const divisionInput = z.object({
+  name: z
+    .string()
+    .refine(
+      (name) => divisionCatalog.some((division) => division.name === name),
+      "Неизвестное подразделение",
+    ),
+  url: z
+    .string()
+    .trim()
+    .max(2000)
+    .refine(
+      (url) => url === "" || (/^https?:\/\//i.test(url) && URL.canParse(url)),
+      "Укажите ссылку с http:// или https://",
+    ),
+});
+export type DivisionLink = z.infer<typeof divisionInput>;
 export const eventInput = z.object({
   title: z.string().trim().min(3).max(160),
   description: z.string().trim().max(4000),
@@ -20,6 +38,7 @@ export const mediaSchema = mediaInput.extend({
   images: z.array(z.object({ id: z.string(), url: z.string() })).optional(),
 });
 export const contentSchema = z.object({
+  divisions: z.array(divisionInput).optional(),
   events: z.array(eventSchema),
   media: z.array(mediaSchema),
 });

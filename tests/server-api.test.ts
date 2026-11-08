@@ -63,6 +63,7 @@ describe("API and storage", () => {
     expect((await agent.get("/api/content")).body).toEqual({
       events: [],
       media: [],
+      divisions: [],
     });
     expect((await agent.get("/api/session")).body.admin).toBe(false);
     expect(
@@ -282,7 +283,7 @@ describe("API and storage", () => {
     expect(second.db.pragma("integrity_check", { simple: true })).toBe("ok");
     expect(second.db.pragma("foreign_key_check")).toEqual([]);
     expect(second.db.pragma("foreign_keys", { simple: true })).toBe(1);
-    expect(second.db.prepare("SELECT * FROM migrations").all()).toHaveLength(3);
+    expect(second.db.prepare("SELECT * FROM migrations").all()).toHaveLength(4);
     second.close();
     const sessions = new SqliteSessions(store);
     sessions.get("missing", (_e, v) => expect(v).toBeNull());
@@ -459,4 +460,45 @@ it("limits galleries and cleans up photos when persistence fails", async () => {
     ).status,
   ).toBe(500);
   log.mockRestore();
+});
+
+it("persists editorial division links, validates destinations and protects changes", async () => {
+  const update = (body: object, token = csrf) =>
+    agent.put("/api/admin/divisions").set("x-csrf-token", token).send(body);
+  expect(
+    (await update({ name: "Москва", url: "https://example.org" })).status,
+  ).toBe(401);
+  await login();
+  expect(
+    (await update({ name: "Москва", url: "https://example.org" }, "wrong"))
+      .status,
+  ).toBe(403);
+  for (const url of [
+    "javascript:alert(1)",
+    "data:text/html,test",
+    "ftp://example.org",
+    "https://",
+    "not-a-url",
+  ]) {
+    expect((await update({ name: "Москва", url })).status).toBe(400);
+  }
+  expect(
+    (await update({ name: "Нетгорода", url: "https://example.org" })).status,
+  ).toBe(400);
+  for (const url of [
+    "https://example.org/moscow",
+    "http://example.org/new",
+    "",
+  ]) {
+    expect((await update({ name: "Москва", url })).status).toBe(200);
+    expect((await agent.get("/api/content")).body.divisions).toEqual([
+      { name: "Москва", url },
+    ]);
+    expect((await agent.get("/api/admin/content")).body.divisions).toEqual([
+      { name: "Москва", url },
+    ]);
+  }
+  store.close();
+  store = new Store(join(dir, "test.sqlite"));
+  expect(store.list().divisions).toEqual([{ name: "Москва", url: "" }]);
 });

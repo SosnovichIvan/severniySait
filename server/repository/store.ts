@@ -2,7 +2,11 @@ import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { EventRecord, MediaRecord } from "../../contracts/content.js";
+import type {
+  EventRecord,
+  MediaRecord,
+  DivisionLink,
+} from "../../contracts/content.js";
 export class Store {
   db: Database.Database;
   constructor(path: string) {
@@ -29,6 +33,9 @@ export class Store {
         url TEXT NOT NULL UNIQUE);
         CREATE INDEX IF NOT EXISTS media_images_owner ON media_images(mediaId);
         INSERT OR IGNORE INTO migrations VALUES(3);`);
+      this.db
+        .exec(`CREATE TABLE IF NOT EXISTS division_links(name TEXT PRIMARY KEY, url TEXT NOT NULL);
+        INSERT OR IGNORE INTO migrations VALUES(4);`);
     })();
   }
   list(admin = false) {
@@ -43,6 +50,9 @@ export class Store {
       )
       .all() as (Omit<MediaRecord, "published"> & { published: number })[];
     return {
+      divisions: this.db
+        .prepare("SELECT name,url FROM division_links ORDER BY name")
+        .all() as DivisionLink[],
       events: events.map((e) => ({ ...e, published: !!e.published })),
       media: media.map((e) => ({
         ...e,
@@ -50,6 +60,13 @@ export class Store {
         images: this.images(e.id),
       })),
     };
+  }
+  saveDivision(input: DivisionLink) {
+    this.db
+      .prepare(
+        "INSERT INTO division_links(name,url) VALUES(@name,@url) ON CONFLICT(name) DO UPDATE SET url=excluded.url",
+      )
+      .run(input);
   }
   saveEvent(input: Omit<EventRecord, "id">, id: string = randomUUID()) {
     this.db

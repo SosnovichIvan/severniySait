@@ -156,7 +156,10 @@ describe("public UI", () => {
   it("searches divisions and handles unmatched search", async () => {
     mockApi();
     const user = userEvent.setup();
-    mount(<PortalPage />, "/divisions");
+    mount(<PortalPage />, "/divisions", {
+      ...content,
+      divisions: [{ name: "Москва", url: "https://t.me/moskvasevchelovek" }],
+    });
     await user.type(
       screen.getByRole("textbox", { name: "Найти город" }),
       "Москва",
@@ -511,4 +514,63 @@ it("keeps the logo splash until initial content settles", async () => {
     "src",
     "/logo.png",
   );
+});
+
+it("keeps divisions without editorial links visible and noninteractive", () => {
+  mockApi();
+  mount(<PortalPage />, "/divisions");
+  expect(screen.getByText("Москва").closest(".division-card")).toHaveAttribute(
+    "aria-disabled",
+    "true",
+  );
+  expect(
+    screen.queryByRole("link", { name: "Москва" }),
+  ).not.toBeInTheDocument();
+});
+it("edits division links, searches cities and retains input on failure", async () => {
+  let fail = false;
+  const links = [{ name: "Москва", url: "https://example.org/moscow" }];
+  mockApi((url, options) => {
+    if (url === "/api/admin/divisions") {
+      if (fail) throw new Error("Сеть недоступна");
+      links[0] = JSON.parse(String(options?.body));
+      return { ok: true };
+    }
+    if (url.includes("content")) return { ...content, divisions: links };
+  });
+  const user = userEvent.setup();
+  mount(<AdminPage />, "/admin", { ...content, divisions: links }, true);
+  await user.click(screen.getByRole("button", { name: "Подразделения" }));
+  expect(screen.getByText(/Выберите город слева/)).toBeInTheDocument();
+  await user.type(
+    screen.getByRole("textbox", { name: "Найти подразделение" }),
+    "Москва",
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Редактировать подразделение Москва" }),
+  );
+  const input = screen.getByRole("textbox", { name: "Ссылка для перехода" });
+  expect(input).toHaveValue("https://example.org/moscow");
+  await user.clear(input);
+  await user.type(input, "https://example.org/new");
+  fail = true;
+  await user.click(screen.getByRole("button", { name: "Сохранить ссылку" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Сеть недоступна");
+  expect(input).toHaveValue("https://example.org/new");
+  fail = false;
+  await user.click(screen.getByRole("button", { name: "Сохранить ссылку" }));
+  expect(await screen.findByRole("status")).toHaveTextContent(
+    "Ссылка подразделения сохранена",
+  );
+  await user.clear(input);
+  await user.click(screen.getByRole("button", { name: "Сохранить ссылку" }));
+  await waitFor(() => expect(links[0].url).toBe(""));
+  await user.clear(
+    screen.getByRole("textbox", { name: "Найти подразделение" }),
+  );
+  await user.type(
+    screen.getByRole("textbox", { name: "Найти подразделение" }),
+    "нетгорода",
+  );
+  expect(screen.getByText("Город не найден.")).toBeInTheDocument();
 });

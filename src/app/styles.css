@@ -537,7 +537,7 @@ h3 {
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
 }
-.division-grid a {
+.division-grid .division-card {
   border-radius: 18px;
   background: var(--surface);
   display: flex;
@@ -547,7 +547,7 @@ h3 {
   padding: 20px 16px;
   font-size: 12px;
 }
-.division-grid a > svg:first-child {
+.division-grid .division-card > svg:first-child {
   color: var(--muted);
 }
 .division-grid a > svg:last-child {
@@ -1122,12 +1122,12 @@ input[type="file"]::file-selector-button {
     grid-template-columns: repeat(2, 1fr);
     gap: 9px;
   }
-  .division-grid a {
+  .division-grid .division-card {
     font-size: 14px;
     padding: 17px 11px;
     gap: 6px;
   }
-  .division-grid a > svg:first-child {
+  .division-grid .division-card > svg:first-child {
     display: none;
   }
   .media-grid {
@@ -1156,6 +1156,7 @@ input[type="file"]::file-selector-button {
   }
   .admin .section-heading {
     align-items: flex-start;
+    flex-wrap: wrap;
   }
   .admin h1 {
     font-size: 45px;
@@ -1924,4 +1925,43 @@ label small {
 }
 .login-dialog .error {
   margin-bottom: 0;
+}
+
+.division-inactive {
+  color: var(--muted);
+}
+.division-editor-list {
+  max-height: 540px;
+  overflow-y: auto;
+  display: grid;
+  gap: 8px;
+}
+.division-editor-list button {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 12px;
+  width: 100%;
+  text-align: left;
+}
+.division-editor-list small {
+  grid-column: 2;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.division-editor h2 {
+  margin-bottom: 24px;
+}
+.division-editor .editor p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.division-editor-list button > span {
+  overflow-wrap: anywhere;
+}
+.division-editor-list button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--bg);
 }

@@ -58,9 +58,13 @@ export function PortalPage() {
         : path === "/calendar"
           ? "Календарь событий"
           : "Медиапространство";
-  const filtered = divisions.filter((d) =>
-    d.name.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = divisions
+    .map((division) => ({
+      name: division.name,
+      url:
+        data?.divisions?.find((link) => link.name === division.name)?.url ?? "",
+    }))
+    .filter((d) => d.name.toLowerCase().includes(search.toLowerCase()));
   const monthEvents =
     data?.events.filter((e) => {
       const d = getMoscowDate(new Date(e.startsAt));
@@ -285,7 +289,7 @@ export function PortalPage() {
               </h1>
               <p>
                 {path === "/divisions"
-                  ? "Найдите региональный канал в каталоге с официального сайта объединения."
+                  ? "Найдите свой город. Переход доступен для подразделений с добавленной ссылкой."
                   : path === "/calendar"
                     ? "Опубликованные редакцией анонсы. Время событий указано по Москве."
                     : "Подтверждённые ссылки на каналы и площадки."}
@@ -305,13 +309,30 @@ export function PortalPage() {
                 <span>{filtered.length}</span>
               </label>
               <div className="division-grid">
-                {filtered.map((d) => (
-                  <a key={d.name} href={d.url} target="_blank" rel="noreferrer">
-                    <MapPin size={17} />
-                    <span>{d.name}</span>
-                    <ArrowUpRight size={18} />
-                  </a>
-                ))}
+                {filtered.map((d) =>
+                  d.url ? (
+                    <a
+                      className="division-card"
+                      key={d.name}
+                      href={d.url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <MapPin size={17} />
+                      <span>{d.name}</span>
+                      <ArrowUpRight size={18} />
+                    </a>
+                  ) : (
+                    <div
+                      className="division-card division-inactive"
+                      key={d.name}
+                      aria-disabled="true"
+                    >
+                      <MapPin size={17} />
+                      <span>{d.name}</span>
+                    </div>
+                  ),
+                )}
               </div>
               {!filtered.length && (
                 <p className="empty">
