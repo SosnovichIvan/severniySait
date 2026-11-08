@@ -94,9 +94,18 @@ export function PortalPage() {
           <section className="hero">
             <div className="hero-copy">
               <p className="eyebrow">Истории, события и люди</p>
-              <h1 aria-label="Северный человек">
-                Северный <span>человек</span>
-              </h1>
+              <div className="hero-heading">
+                <h1 aria-label="Северный человек">
+                  Северный <span>человек</span>
+                </h1>
+                <img
+                  className="brand-logo"
+                  src="/logo.png"
+                  width="240"
+                  height="240"
+                  alt="Логотип объединения «Северный человек»"
+                />
+              </div>
               <p className="hero-statement">
                 Сохранять традиции и помогать друг другу — в этом смысл общего
                 дела.

@@ -41,20 +41,6 @@ export function App() {
       </a>
       <header className="site-header">
         <div className="container header-inner">
-          <Link
-            className="brand"
-            to="/"
-            aria-label="Северный человек — главная"
-          >
-            <img
-              className="brand-logo"
-              src="/logo.png"
-              width="64"
-              height="72"
-              alt=""
-              aria-hidden="true"
-            />
-          </Link>
           <nav
             className={open ? "navigation open" : "navigation"}
             aria-label="Основная навигация"
