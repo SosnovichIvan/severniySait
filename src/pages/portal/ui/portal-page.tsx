@@ -156,14 +156,6 @@ export function PortalPage() {
                   </dd>
                 </div>
               </dl>
-              <a
-                className="about-source"
-                href="https://северныйчеловек.рф/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                По материалам сайта объединения <ArrowUpRight size={14} />
-              </a>
             </section>
           </section>
           <section
