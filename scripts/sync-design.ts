@@ -4,7 +4,7 @@ const config = JSON.parse(await readFile("design/opendesign.json", "utf8")) as {
 };
 const base = process.env.OPENDESIGN_API_URL ?? "http://127.0.0.1:56883";
 for (const name of await readdir("design")) {
-  if (!/\.(html|png|jpg)$/.test(name)) continue;
+  if (!/\.(html|png|jpg|webp)$/.test(name)) continue;
   const binary = !name.endsWith(".html");
   const response = await fetch(
     `${base}/api/projects/${config.projectId}/files`,

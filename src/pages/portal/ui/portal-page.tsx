@@ -1,3 +1,4 @@
+import { TextWithLinks } from "../../../shared/ui/text-with-links";
 import {
   getMoscowDate,
   useMoscowToday,
@@ -312,10 +313,12 @@ export function PortalPage() {
                       <img src={m.url} alt={m.title} loading="lazy" />
                     )}
                     <p className="eyebrow">
-                      {m.kind === "video" ? "ВИДЕО" : "ФОТО"}
+                      {m.kind === "video" ? "ВИДЕО" : "МАТЕРИАЛ"}
                     </p>
                     <h3>{m.title}</h3>
-                    <p>{m.description}</p>
+                    <p>
+                      <TextWithLinks text={m.description} />
+                    </p>
                   </article>
                 ))}
               </div>
@@ -440,10 +443,12 @@ export function PortalPage() {
                         </a>
                       )}
                       <p className="eyebrow">
-                        {m.kind === "video" ? "ВИДЕО" : "ФОТО"}
+                        {m.kind === "video" ? "ВИДЕО" : "МАТЕРИАЛ"}
                       </p>
                       <h3>{m.title}</h3>
-                      <p>{m.description}</p>
+                      <p>
+                        <TextWithLinks text={m.description} />
+                      </p>
                     </article>
                   ))}
               </div>

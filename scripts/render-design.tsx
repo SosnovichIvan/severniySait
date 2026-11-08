@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { readFile, readdir, writeFile, mkdir } from "node:fs/promises";
 import { App } from "../src/app/shell";
+import archive from "../content/archive.json";
 const files = await readdir(".preview/assets");
 const css = await readFile(
   `.preview/assets/${files.find((f) => f.endsWith(".css"))}`,
@@ -16,6 +17,20 @@ await writeFile(
   "design/mikhail-mavashi.jpg",
   await readFile("public/mikhail-mavashi.jpg"),
 );
+for (const entry of archive) {
+  await writeFile(
+    `design/${entry.file}`,
+    await readFile(`content/media/${entry.file}`),
+  );
+}
+const editorialMedia = archive.map((entry) => ({
+  id: entry.key,
+  title: entry.title,
+  description: entry.description,
+  url: entry.file,
+  kind: "image",
+  published: true,
+}));
 const pages = [
   ["home", "/"],
   ["media", "/media"],
@@ -33,7 +48,7 @@ for (const theme of ["dark", "light"])
     const client = new QueryClient({
       defaultOptions: { queries: { staleTime: Infinity } },
     });
-    client.setQueryData(["content"], { media: [], events: [] });
+    client.setQueryData(["content"], { media: editorialMedia, events: [] });
     client.setQueryData(["session"], {
       admin: path === "/admin",
       csrf: "design-only",

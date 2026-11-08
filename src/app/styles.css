@@ -1446,3 +1446,23 @@ textarea,
     font-size: 40px;
   }
 }
+
+.media-card {
+  min-width: 0;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 26px;
+}
+.media-card img {
+  object-fit: contain;
+}
+.media-card > p:last-child {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.media-card > p:last-child a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
