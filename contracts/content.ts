@@ -1,5 +1,13 @@
 import { z } from "zod";
 import divisionCatalog from "./divisions.json" with { type: "json" };
+const divisionUrl = z
+  .string()
+  .trim()
+  .max(2000)
+  .refine(
+    (url) => url === "" || (/^https?:\/\//i.test(url) && URL.canParse(url)),
+    "Укажите ссылку с http:// или https://",
+  );
 export const divisionInput = z.object({
   name: z
     .string()
@@ -7,14 +15,19 @@ export const divisionInput = z.object({
       (name) => divisionCatalog.some((division) => division.name === name),
       "Неизвестное подразделение",
     ),
-  url: z
+  url: divisionUrl,
+  coordinator: z.string().trim().max(120).optional(),
+  contact: z.string().trim().max(300).optional(),
+  vk: divisionUrl.optional(),
+  max: divisionUrl.optional(),
+  telegram: divisionUrl.optional(),
+  email: z
     .string()
     .trim()
-    .max(2000)
-    .refine(
-      (url) => url === "" || (/^https?:\/\//i.test(url) && URL.canParse(url)),
-      "Укажите ссылку с http:// или https://",
-    ),
+    .max(254)
+    .pipe(z.email().or(z.literal("")))
+    .optional(),
+  website: divisionUrl.optional(),
 });
 export type DivisionLink = z.infer<typeof divisionInput>;
 export const eventInput = z.object({

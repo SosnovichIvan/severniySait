@@ -1965,3 +1965,19 @@ label small {
   border-color: var(--accent);
   background: var(--bg);
 }
+
+.division-contact-fields {
+  border: 0;
+  padding: 0;
+  margin: 8px 0 0;
+  min-width: 0;
+  display: grid;
+  gap: 20px;
+}
+.division-contact-fields legend {
+  padding: 0;
+  margin-bottom: 20px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}

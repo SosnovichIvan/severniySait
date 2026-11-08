@@ -43,7 +43,13 @@ export function DivisionEditor({ links, pending, onSave }: Props) {
                 disabled={pending}
                 aria-label={`Редактировать подразделение ${name}`}
                 aria-pressed={draft?.name === name}
-                onClick={() => setDraft({ name, url })}
+                onClick={() =>
+                  setDraft({
+                    ...links.find((link) => link.name === name),
+                    name,
+                    url,
+                  })
+                }
               >
                 <MapPin size={16} />
                 <span>{name}</span>
@@ -76,8 +82,102 @@ export function DivisionEditor({ links, pending, onSave }: Props) {
               Добавьте адрес карточки подразделения или региональной площадки.
               Пустое поле отключает переход на сайте.
             </p>
+            <fieldset className="division-contact-fields" disabled={pending}>
+              <legend>Дополнительная информация · необязательно</legend>
+              <label>
+                Координатор
+                <input
+                  name="coordinator"
+                  type="text"
+                  maxLength={120}
+                  placeholder="Имя и фамилия"
+                  value={draft.coordinator ?? ""}
+                  onChange={(event) =>
+                    setDraft({ ...draft, coordinator: event.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Контакт для связи
+                <input
+                  name="contact"
+                  type="text"
+                  maxLength={300}
+                  placeholder="Телефон, имя пользователя или другой контакт"
+                  value={draft.contact ?? ""}
+                  onChange={(event) =>
+                    setDraft({ ...draft, contact: event.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Ссылка на ВК
+                <input
+                  name="vk"
+                  type="url"
+                  maxLength={2000}
+                  placeholder="https://vk.com/…"
+                  value={draft.vk ?? ""}
+                  onChange={(event) =>
+                    setDraft({ ...draft, vk: event.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Ссылка на MAX
+                <input
+                  name="max"
+                  type="url"
+                  maxLength={2000}
+                  placeholder="https://max.ru/…"
+                  value={draft.max ?? ""}
+                  onChange={(event) =>
+                    setDraft({ ...draft, max: event.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Ссылка на Telegram
+                <input
+                  name="telegram"
+                  type="url"
+                  maxLength={2000}
+                  placeholder="https://t.me/…"
+                  value={draft.telegram ?? ""}
+                  onChange={(event) =>
+                    setDraft({ ...draft, telegram: event.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Электронная почта
+                <input
+                  name="email"
+                  type="email"
+                  maxLength={254}
+                  placeholder="name@example.ru"
+                  value={draft.email ?? ""}
+                  onChange={(event) =>
+                    setDraft({ ...draft, email: event.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Ссылка на сайт
+                <input
+                  name="website"
+                  type="url"
+                  maxLength={2000}
+                  placeholder="https://…"
+                  value={draft.website ?? ""}
+                  onChange={(event) =>
+                    setDraft({ ...draft, website: event.target.value })
+                  }
+                />
+              </label>
+            </fieldset>
             <button className="button primary" disabled={pending}>
-              {pending ? "Сохраняем…" : "Сохранить ссылку"}
+              {pending ? "Сохраняем…" : "Сохранить подразделение"}
             </button>
           </form>
         ) : (

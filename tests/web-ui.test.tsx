@@ -551,19 +551,48 @@ it("edits division links, searches cities and retains input on failure", async (
   );
   const input = screen.getByRole("textbox", { name: "Ссылка для перехода" });
   expect(input).toHaveValue("https://example.org/moscow");
+  const contacts = {
+    Координатор: "Иван Иванов",
+    "Контакт для связи": "+7 900 000-00-00",
+    "Ссылка на ВК": "https://vk.com/example",
+    "Ссылка на MAX": "https://max.ru/example",
+    "Ссылка на Telegram": "https://t.me/example",
+    "Электронная почта": "editor@example.org",
+    "Ссылка на сайт": "https://example.org",
+  };
+  for (const [name, value] of Object.entries(contacts)) {
+    const field = screen.getByRole("textbox", { name });
+    expect(field).not.toBeRequired();
+    await user.type(field, value);
+  }
+
   await user.clear(input);
   await user.type(input, "https://example.org/new");
   fail = true;
-  await user.click(screen.getByRole("button", { name: "Сохранить ссылку" }));
+  await user.click(
+    screen.getByRole("button", { name: "Сохранить подразделение" }),
+  );
   expect(await screen.findByRole("alert")).toHaveTextContent("Сеть недоступна");
   expect(input).toHaveValue("https://example.org/new");
   fail = false;
-  await user.click(screen.getByRole("button", { name: "Сохранить ссылку" }));
-  expect(await screen.findByRole("status")).toHaveTextContent(
-    "Ссылка подразделения сохранена",
+  await user.click(
+    screen.getByRole("button", { name: "Сохранить подразделение" }),
   );
+  expect(await screen.findByRole("status")).toHaveTextContent(
+    "Данные подразделения сохранены",
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Редактировать подразделение Москва" }),
+  );
+  for (const [name, value] of Object.entries(contacts)) {
+    const field = screen.getByRole("textbox", { name });
+    expect(field).toHaveValue(value);
+    await user.clear(field);
+  }
   await user.clear(input);
-  await user.click(screen.getByRole("button", { name: "Сохранить ссылку" }));
+  await user.click(
+    screen.getByRole("button", { name: "Сохранить подразделение" }),
+  );
   await waitFor(() => expect(links[0].url).toBe(""));
   await user.clear(
     screen.getByRole("textbox", { name: "Найти подразделение" }),

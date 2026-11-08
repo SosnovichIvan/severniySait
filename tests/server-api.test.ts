@@ -283,7 +283,7 @@ describe("API and storage", () => {
     expect(second.db.pragma("integrity_check", { simple: true })).toBe("ok");
     expect(second.db.pragma("foreign_key_check")).toEqual([]);
     expect(second.db.pragma("foreign_keys", { simple: true })).toBe(1);
-    expect(second.db.prepare("SELECT * FROM migrations").all()).toHaveLength(4);
+    expect(second.db.prepare("SELECT * FROM migrations").all()).toHaveLength(5);
     second.close();
     const sessions = new SqliteSessions(store);
     sessions.get("missing", (_e, v) => expect(v).toBeNull());
@@ -494,11 +494,65 @@ it("persists editorial division links, validates destinations and protects chang
     expect((await agent.get("/api/content")).body.divisions).toEqual([
       { name: "Москва", url },
     ]);
-    expect((await agent.get("/api/admin/content")).body.divisions).toEqual([
-      { name: "Москва", url },
-    ]);
+    expect(
+      (await agent.get("/api/admin/content")).body.divisions,
+    ).toMatchObject([{ name: "Москва", url }]);
   }
   store.close();
   store = new Store(join(dir, "test.sqlite"));
   expect(store.list().divisions).toEqual([{ name: "Москва", url: "" }]);
+});
+
+it("validates optional division contacts, preserves omissions and clears explicitly", async () => {
+  await login();
+  const fields = {
+    coordinator: "Иван Иванов",
+    contact: "+7 900 000-00-00",
+    vk: "https://vk.com/example",
+    max: "https://max.ru/example",
+    telegram: "https://t.me/example",
+    email: "editor@example.org",
+    website: "https://example.org",
+  };
+  const update = (body: object) =>
+    agent.put("/api/admin/divisions").set("x-csrf-token", csrf).send(body);
+  for (const [key, value] of Object.entries({
+    vk: "javascript:alert(1)",
+    max: "https://",
+    telegram: "t.me/example",
+    email: "bad-address",
+    website: "data:text/html,x",
+    coordinator: "x".repeat(121),
+    contact: "x".repeat(301),
+  })) {
+    expect(
+      (await update({ name: "Москва", url: "", [key]: value })).status,
+    ).toBe(400);
+  }
+  expect((await update({ name: "Москва", url: "", ...fields })).status).toBe(
+    200,
+  );
+  expect((await agent.get("/api/admin/content")).body.divisions[0]).toEqual({
+    name: "Москва",
+    url: "",
+    ...fields,
+  });
+  expect((await agent.get("/api/content")).body.divisions[0]).toEqual({
+    name: "Москва",
+    url: "",
+  });
+  expect(
+    (await update({ name: "Москва", url: "https://example.org/card" })).status,
+  ).toBe(200);
+  expect(
+    (await agent.get("/api/admin/content")).body.divisions[0],
+  ).toMatchObject(fields);
+  store.close();
+  store = new Store(join(dir, "test.sqlite"));
+  expect(store.list(true).divisions[0]).toMatchObject(fields);
+  const cleared = Object.fromEntries(
+    Object.keys(fields).map((key) => [key, ""]),
+  );
+  store.saveDivision({ name: "Москва", url: "", ...cleared });
+  expect(store.list(true).divisions[0]).toMatchObject(cleared);
 });

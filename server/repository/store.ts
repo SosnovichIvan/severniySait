@@ -36,6 +36,17 @@ export class Store {
       this.db
         .exec(`CREATE TABLE IF NOT EXISTS division_links(name TEXT PRIMARY KEY, url TEXT NOT NULL);
         INSERT OR IGNORE INTO migrations VALUES(4);`);
+      if (!this.db.prepare("SELECT 1 FROM migrations WHERE version=5").get()) {
+        this.db
+          .exec(`ALTER TABLE division_links ADD COLUMN coordinator TEXT NOT NULL DEFAULT '';
+          ALTER TABLE division_links ADD COLUMN contact TEXT NOT NULL DEFAULT '';
+          ALTER TABLE division_links ADD COLUMN vk TEXT NOT NULL DEFAULT '';
+          ALTER TABLE division_links ADD COLUMN max TEXT NOT NULL DEFAULT '';
+          ALTER TABLE division_links ADD COLUMN telegram TEXT NOT NULL DEFAULT '';
+          ALTER TABLE division_links ADD COLUMN email TEXT NOT NULL DEFAULT '';
+          ALTER TABLE division_links ADD COLUMN website TEXT NOT NULL DEFAULT '';
+          INSERT INTO migrations VALUES(5);`);
+      }
     })();
   }
   list(admin = false) {
@@ -51,7 +62,9 @@ export class Store {
       .all() as (Omit<MediaRecord, "published"> & { published: number })[];
     return {
       divisions: this.db
-        .prepare("SELECT name,url FROM division_links ORDER BY name")
+        .prepare(
+          `SELECT name,url${admin ? ",coordinator,contact,vk,max,telegram,email,website" : ""} FROM division_links ORDER BY name`,
+        )
         .all() as DivisionLink[],
       events: events.map((e) => ({ ...e, published: !!e.published })),
       media: media.map((e) => ({
@@ -64,9 +77,23 @@ export class Store {
   saveDivision(input: DivisionLink) {
     this.db
       .prepare(
-        "INSERT INTO division_links(name,url) VALUES(@name,@url) ON CONFLICT(name) DO UPDATE SET url=excluded.url",
+        `INSERT INTO division_links(name,url,coordinator,contact,vk,max,telegram,email,website)
+         VALUES(@name,@url,coalesce(@coordinator,''),coalesce(@contact,''),coalesce(@vk,''),coalesce(@max,''),coalesce(@telegram,''),coalesce(@email,''),coalesce(@website,''))
+         ON CONFLICT(name) DO UPDATE SET url=excluded.url,
+         coordinator=coalesce(@coordinator,division_links.coordinator),contact=coalesce(@contact,division_links.contact),
+         vk=coalesce(@vk,division_links.vk),max=coalesce(@max,division_links.max),telegram=coalesce(@telegram,division_links.telegram),
+         email=coalesce(@email,division_links.email),website=coalesce(@website,division_links.website)`,
       )
-      .run(input);
+      .run({
+        coordinator: null,
+        contact: null,
+        vk: null,
+        max: null,
+        telegram: null,
+        email: null,
+        website: null,
+        ...input,
+      });
   }
   saveEvent(input: Omit<EventRecord, "id">, id: string = randomUUID()) {
     this.db

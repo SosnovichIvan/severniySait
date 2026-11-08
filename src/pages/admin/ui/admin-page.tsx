@@ -251,7 +251,7 @@ export function AdminPage() {
               onSave={(link) =>
                 mutation.mutate(async () => {
                   await send("/api/admin/divisions", "PUT", link, csrf);
-                  setFeedback("Ссылка подразделения сохранена.");
+                  setFeedback("Данные подразделения сохранены.");
                 })
               }
             />
