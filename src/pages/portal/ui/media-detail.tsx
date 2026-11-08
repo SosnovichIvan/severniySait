@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { useParams } from "react-router-dom";
 import { loadContent } from "../../../shared/api";
 import { TextWithLinks } from "../../../shared/ui/text-with-links";
 import { PhotoGallery } from "../../../shared/ui/photo-gallery";
@@ -14,9 +13,6 @@ export function MediaDetail() {
   const item = data?.media.find((media) => media.id === id);
   return (
     <main id="main" className="container media-detail">
-      <Link to="/media" className="text-link">
-        <ArrowLeft size={18} /> Вернуться в медиа
-      </Link>
       {isPending ? (
         <p className="empty" role="status">
           Загружаем материал…

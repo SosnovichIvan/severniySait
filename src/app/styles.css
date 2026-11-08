@@ -439,7 +439,7 @@ h3 {
   margin: 0;
 }
 .page-intro {
-  padding: 52px 0 42px;
+  padding: 24px 0 28px;
 }
 .page-intro h1,
 .admin h1 {
@@ -448,6 +448,12 @@ h3 {
   letter-spacing: -2px;
   margin: 27px 0 20px;
   line-height: 1.1;
+}
+.page-intro h1 {
+  margin: 0 0 16px;
+}
+.media-index {
+  padding-top: 24px;
 }
 .page-intro > p:last-child {
   color: var(--muted);
@@ -1008,8 +1014,9 @@ textarea {
   .editorial-empty p:not(.eyebrow) {
     font-size: 16px;
   }
-  .page-intro {
-    padding-top: 35px;
+  .page-intro,
+  .media-index {
+    padding-top: 20px;
   }
   .page-intro h1 {
     font-size: 42px;
@@ -1562,11 +1569,11 @@ label small {
   margin-top: 20px;
 }
 .media-detail {
-  padding-block: 40px 64px;
+  padding-block: 24px 64px;
 }
 .media-detail-heading {
   max-width: 950px;
-  padding-block: 36px;
+  padding-block: 0 28px;
 }
 .media-detail-heading h1 {
   font-family: var(--serif);
@@ -1762,10 +1769,10 @@ label small {
 }
 @media (max-width: 640px) {
   .media-detail {
-    padding-top: 24px;
+    padding-top: 20px;
   }
   .media-detail-heading {
-    padding-block: 28px;
+    padding-block: 0 24px;
   }
   .gallery-stage {
     border-radius: 20px;

@@ -86,7 +86,10 @@ export function PortalPage() {
     </>
   );
   return (
-    <main id="main" className="container">
+    <main
+      id="main"
+      className={path === "/media" ? "container media-index" : "container"}
+    >
       {isHome ? (
         <>
           <section className="hero">
@@ -272,24 +275,23 @@ export function PortalPage() {
         </>
       ) : (
         <>
-          <div className="page-intro">
-            <p className="eyebrow">
-              <Link to="/">ГЛАВНАЯ</Link> / {title.toUpperCase()}
-            </p>
-            <h1>
-              {title}
-              <span className="heading-dot">.</span>
-            </h1>
-            <p>
-              {path === "/divisions"
-                ? "Найдите региональный канал в каталоге с официального сайта объединения."
-                : path === "/calendar"
-                  ? "Опубликованные редакцией анонсы. Время событий указано по Москве."
-                  : path === "/media"
-                    ? "Хроника с 2022 года: события, фотографии и публикации объединения."
+          {path === "/media" ? (
+            <h1 className="sr-only">Медиа</h1>
+          ) : (
+            <div className="page-intro">
+              <h1>
+                {title}
+                <span className="heading-dot">.</span>
+              </h1>
+              <p>
+                {path === "/divisions"
+                  ? "Найдите региональный канал в каталоге с официального сайта объединения."
+                  : path === "/calendar"
+                    ? "Опубликованные редакцией анонсы. Время событий указано по Москве."
                     : "Подтверждённые ссылки на каналы и площадки."}
-            </p>
-          </div>
+              </p>
+            </div>
+          )}
           {path === "/divisions" && (
             <>
               <label className="search-box">

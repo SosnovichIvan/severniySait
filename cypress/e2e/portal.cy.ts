@@ -93,6 +93,6 @@ describe('Themed select controls',()=>{
   cy.screenshot('select-light-mobile',{capture:'fullPage'});
   cy.get('[aria-label="Включить тёмную тему"]').click();order().click();
   cy.screenshot('select-dark-mobile',{capture:'fullPage'});
-  cy.contains('h1','Медиа').click();order().should('have.attr','aria-expanded','false');
+  cy.get('#main').click('bottomRight');order().should('have.attr','aria-expanded','false');
  });
 });
