@@ -1,0 +1,71 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Северный человек · загрузка</title><style>
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 28px;
+        background: #171e1b;
+        color: #f0eee6;
+        font:
+          11px Arial,
+          sans-serif;
+        letter-spacing: 2px;
+      }
+      #boot-splash img {
+        width: 190px;
+        height: 210px;
+        object-fit: contain;
+        animation: boot-breathe 1.8s ease-in-out infinite;
+      }
+      .boot-track {
+        border-radius: 999px;
+        width: 130px;
+        height: 2px;
+        background: #344239;
+        overflow: hidden;
+      }
+      .boot-track:after {
+        content: "";
+        display: block;
+        width: 50%;
+        height: 100%;
+        background: #b8ceb5;
+        animation: boot-progress 1.2s ease-in-out infinite;
+      }
+      @keyframes boot-breathe {
+        50% {
+          opacity: 0.6;
+          transform: scale(0.97);
+        }
+      }
+      @keyframes boot-progress {
+        from {
+          transform: translateX(-100%);
+        }
+        to {
+          transform: translateX(300%);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #boot-splash img,
+        .boot-track:after {
+          animation: none;
+        }
+      }
+    </style></head><body><div
+      id="boot-splash"
+      role="status"
+      aria-live="polite"
+      aria-label="Загрузка сайта Северный человек"
+    >
+      <img
+        src="logo.png"
+        width="190"
+        height="210"
+        alt="Логотип Северный человек"
+      /><span>ЗАГРУЖАЕМ ПРОСТРАНСТВО</span
+      ><span class="boot-track" aria-hidden="true"></span>
+    </div></body></html>

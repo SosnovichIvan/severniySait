@@ -1,0 +1,66 @@
+name: PR quality
+on:
+  pull_request:
+    branches: [main, develop]
+permissions:
+  contents: read
+concurrency:
+  group: quality-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24.12.0"
+          cache: npm
+      - name: Validate PR route
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          if [ "$BASE" = main ] && { [ "$HEAD" != develop ] || [ "$HEAD_REPO" != "$GITHUB_REPOSITORY" ]; }; then
+            echo 'Only develop can target main'; exit 1
+          fi
+          if [ "$BASE" = develop ] && { [ "$HEAD" = main ] || [ "$HEAD" = develop ]; }; then
+            echo 'Use a working branch targeting develop'; exit 1
+          fi
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run check
+      - run: npm run verify:compile
+      - run: npm run test:e2e
+      - name: Validate Docker configuration
+        env:
+          RELEASE_TAG: 0.1.0
+          SESSION_SECRET: test-only-secret-not-used-outside-ci
+          ADMIN_PASSWORD_HASH: test-only-placeholder
+          SITE_ADDRESS: localhost
+        run: |
+          bash -n scripts/backup.sh scripts/deploy.sh scripts/check-deploy-time.sh scripts/run-scheduled-deploy.sh ops/ssh-deploy.sh ops/bootstrap-vps.sh
+          docker compose config --quiet
+          docker run --rm -e SITE_ADDRESS=:80 -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2.10.2-alpine caddy validate --config /etc/caddy/Caddyfile
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: verification
+          path: |
+            coverage
+            cypress/screenshots
+          retention-days: 7
+  quality-gate:
+    name: quality-gate
+    needs: checks
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - env:
+          RESULT: ${{ needs.checks.result }}
+        run: test "$RESULT" = success

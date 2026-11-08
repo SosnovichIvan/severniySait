@@ -1,0 +1,13 @@
+.git
+.agents
+.agent-skills-lab
+node_modules
+dist
+.preview
+.env*
+.local-admin-password
+data
+uploads
+coverage
+cypress
+design

@@ -1,0 +1,75 @@
+name: Deploy released version to VPS
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      scheduled_at:
+        required: false
+        default: ""
+        type: string
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Published immutable version (e.g. 0.1.0)
+        required: true
+        type: string
+      scheduled_at:
+        description: "Explicit update time in UTC (e.g. 2026-12-01T00:00:00Z); launch within 10 minutes"
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify release on main
+        env:
+          SCHEDULED_AT: ${{ inputs.scheduled_at }}
+          VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            test "$GITHUB_REF" = refs/heads/main
+            ./scripts/check-deploy-time.sh "$SCHEDULED_AT"
+          else
+            test "$GITHUB_EVENT_NAME" = push
+            test "$GITHUB_REF" = "refs/tags/$VERSION"
+          fi
+          [[ "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          git fetch origin main --tags
+          git rev-parse --verify "refs/tags/$VERSION"
+          git merge-base --is-ancestor "refs/tags/$VERSION" origin/main
+      - name: Deploy using restricted SSH access
+        env:
+          SCHEDULED_AT: ${{ inputs.scheduled_at }}
+          VERSION: ${{ inputs.version }}
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          if [ -z "$SCHEDULED_AT" ]; then SCHEDULED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"; fi
+          ./scripts/check-deploy-time.sh "$SCHEDULED_AT"
+          test -n "$SSH_KEY" && test -n "$KNOWN_HOSTS"
+          [[ "$DEPLOY_HOST" =~ ^[a-zA-Z0-9.-]+$ ]]
+          [[ "$DEPLOY_USER" =~ ^[a-zA-Z0-9_-]+$ ]]
+          [[ "$DEPLOY_PATH" =~ ^/[a-zA-Z0-9/_-]+$ ]]
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
+          trap 'rm -f ~/.ssh/deploy_key' EXIT
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "deploy $VERSION $SCHEDULED_AT"
