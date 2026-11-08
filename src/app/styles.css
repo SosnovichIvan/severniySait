@@ -93,6 +93,34 @@ textarea:focus-visible {
   gap: 24px;
   padding: 12px 0;
 }
+.header-brand {
+  grid-column: 1;
+  display: inline-flex;
+  align-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  max-width: 148px;
+  justify-self: start;
+  flex-shrink: 0;
+  font-family: var(--serif);
+  color: var(--ink);
+}
+.header-brand-name {
+  font-size: 24px;
+  line-height: 1.02;
+  letter-spacing: -0.4px;
+}
+.header-brand-name > span {
+  display: block;
+  font-style: italic;
+  color: var(--accent);
+}
+.header-brand-short {
+  display: none;
+}
+.header-brand:hover {
+  color: var(--accent);
+}
 .navigation {
   display: flex;
   align-items: center;
@@ -951,6 +979,14 @@ textarea {
   }
 }
 @media (max-width: 640px) {
+  .header-brand-name {
+    display: none;
+  }
+  .header-brand-short {
+    display: block;
+    font-size: 28px;
+    letter-spacing: -0.8px;
+  }
   .container {
     width: calc(100% - 36px);
   }

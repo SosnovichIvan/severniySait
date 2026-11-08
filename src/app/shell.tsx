@@ -41,6 +41,18 @@ export function App() {
       </a>
       <header className="site-header">
         <div className="container header-inner">
+          <Link
+            className="header-brand"
+            to="/"
+            aria-label="Северный человек — главная"
+          >
+            <span className="header-brand-name" aria-hidden="true">
+              Северный<span>человек</span>
+            </span>
+            <span className="header-brand-short" aria-hidden="true">
+              СЧ
+            </span>
+          </Link>
           <nav
             className={open ? "navigation open" : "navigation"}
             aria-label="Основная навигация"
