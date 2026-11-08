@@ -48,9 +48,7 @@ jobs:
             test "$GITHUB_REF" = "refs/tags/$VERSION"
           fi
           [[ "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
-          git fetch origin main --tags
-          git rev-parse --verify "refs/tags/$VERSION"
-          git merge-base --is-ancestor "refs/tags/$VERSION" origin/main
+          ./scripts/verify-release.sh "$VERSION"
       - name: Deploy using restricted SSH access
         env:
           SCHEDULED_AT: ${{ inputs.scheduled_at }}
