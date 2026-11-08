@@ -1,3 +1,4 @@
+import { Select } from "../../../shared/ui/select";
 import type { MediaRecord } from "../../../../contracts/content";
 import { channels } from "../../../shared/config/channels";
 import { sortMedia } from "../../../shared/lib/media-chronology";
@@ -352,32 +353,24 @@ export function PortalPage() {
                 ))}
               </div>
               <div className="archive-controls">
-                <label>
-                  Год
-                  <select
-                    value={mediaYear}
-                    onChange={(e) => setMediaYear(e.target.value)}
-                  >
-                    <option value="all">Все годы</option>
-                    {mediaYears.map((year) => (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Порядок
-                  <select
-                    value={mediaOrder}
-                    onChange={(e) =>
-                      setMediaOrder(e.target.value as "asc" | "desc")
-                    }
-                  >
-                    <option value="asc">От истоков к сегодняшнему дню</option>
-                    <option value="desc">Сначала новые</option>
-                  </select>
-                </label>
+                <Select
+                  label="Год"
+                  value={mediaYear}
+                  onChange={setMediaYear}
+                  options={[
+                    { value: "all", label: "Все годы" },
+                    ...mediaYears.map((year) => ({ value: year, label: year })),
+                  ]}
+                />
+                <Select
+                  label="Порядок"
+                  value={mediaOrder}
+                  onChange={(value) => setMediaOrder(value as "asc" | "desc")}
+                  options={[
+                    { value: "asc", label: "От истоков к сегодняшнему дню" },
+                    { value: "desc", label: "Сначала новые" },
+                  ]}
+                />
               </div>
               <div className="media-grid">
                 {archiveMedia.map((m) => (
