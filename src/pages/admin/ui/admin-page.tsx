@@ -1,3 +1,5 @@
+import { LoginDialog } from "../../../features/editor-login";
+import { useNavigate } from "react-router-dom";
 import { ConfirmDialog } from "../../../shared/ui/confirm-dialog";
 import { useState, type FormEvent } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -10,13 +12,7 @@ import {
   PenLine,
   Trash2,
 } from "lucide-react";
-import {
-  loadContent,
-  loadSession,
-  send,
-  request,
-  parseSession,
-} from "../../../shared/api";
+import { loadContent, loadSession, send, request } from "../../../shared/api";
 import type { EventRecord, MediaRecord } from "../../../../contracts/content";
 type Draft = {
   id?: string;
@@ -35,6 +31,7 @@ const blank: Draft = {
 };
 export function AdminPage() {
   const client = useQueryClient();
+  const navigate = useNavigate();
   const session = useQuery({
     queryKey: ["session"],
     queryFn: loadSession,
@@ -46,7 +43,6 @@ export function AdminPage() {
     enabled: !!session.data?.admin,
     retry: false,
   });
-  const [password, setPassword] = useState("");
   const [tab, setTab] = useState<"events" | "media">("events");
   const [draft, setDraft] = useState<Draft>(blank);
   const [mediaEdit, setMediaEdit] = useState<MediaRecord | null>(null);
@@ -64,16 +60,6 @@ export function AdminPage() {
     onError: () => setFeedback(""),
   });
   const csrf = session.data?.csrf ?? "";
-  async function login(e: FormEvent) {
-    e.preventDefault();
-    mutation.mutate(async () => {
-      const result = parseSession(
-        await send("/api/login", "POST", { password }, csrf),
-      );
-      client.setQueryData(["session"], result);
-      setPassword("");
-    });
-  }
   async function logout() {
     mutation.mutate(async () => {
       await send("/api/logout", "POST", {}, csrf);
@@ -187,28 +173,12 @@ export function AdminPage() {
     );
   if (!session.data?.admin)
     return (
-      <main id="main" className="container login-wrap">
-        <form className="login-card" onSubmit={login}>
-          <p className="eyebrow">РЕДАКЦИЯ ПОРТАЛА</p>
-          <h1>Вход в админку</h1>
-          <p>Управление медиатекой и календарём событий.</p>
-          <label>
-            Пароль администратора
-            <input
-              type="password"
-              autoComplete="current-password"
-              required
-              maxLength={200}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </label>
-          {notice}
-          <button className="button primary" disabled={mutation.isPending}>
-            {mutation.isPending ? "Входим…" : "Войти"}
-          </button>
-        </form>
-      </main>
+      <>
+        <main id="main" className="container empty">
+          <p>Для работы с материалами войдите в редакцию.</p>
+        </main>
+        <LoginDialog onClose={() => navigate("/")} />
+      </>
     );
   return (
     <main id="main" className="container admin">

@@ -162,6 +162,7 @@ textarea:focus-visible {
   gap: 10px;
 }
 .editor-login {
+  background: transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -737,7 +738,7 @@ h3 {
   font-size: 24px;
 }
 .panel form,
-.login-card {
+.login-card form {
   border-radius: var(--radius);
   display: grid;
   gap: 20px;
@@ -777,20 +778,15 @@ textarea {
   height: 17px;
   accent-color: var(--accent);
 }
-.login-wrap {
-  padding-block: 75px;
-  min-height: 65vh;
-  display: grid;
-  place-items: center;
-}
 .login-card {
-  max-width: 430px;
+  position: relative;
+  max-width: 100%;
   width: 100%;
   padding: 35px;
   border: 1px solid var(--line);
   background: var(--surface);
 }
-.login-card h1 {
+.login-card h2 {
   font-size: 30px;
   letter-spacing: -1px;
 }
@@ -1824,4 +1820,49 @@ label small {
     margin-top: 32px;
     font-size: 17px;
   }
+}
+
+.login-dialog {
+  width: min(460px, calc(100% - 36px));
+  max-width: 460px;
+  max-height: calc(100dvh - 36px);
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 28px;
+  background: var(--surface);
+  color: var(--ink);
+  overflow: auto;
+}
+.login-dialog::backdrop {
+  background: #0b130fc4;
+  backdrop-filter: blur(6px);
+}
+.login-dialog .login-card {
+  border-radius: 28px;
+  padding-top: 64px;
+}
+.login-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+.login-card h2 {
+  font-family: var(--serif);
+  font-size: 34px;
+  font-weight: 400;
+  margin-block: 16px 12px;
+}
+.login-card form {
+  margin-top: 26px;
+}
+.login-card > [role="status"],
+.login-card > [role="alert"] {
+  margin-top: 24px;
+}
+.login-card form > .button {
+  width: 100%;
+}
+.login-dialog .error {
+  margin-bottom: 0;
 }

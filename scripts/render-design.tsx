@@ -1,3 +1,4 @@
+import { LoginDialog } from "../src/features/editor-login";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
@@ -34,6 +35,7 @@ const editorialMedia = archive.map((entry) => ({
 }));
 const pages = [
   ["home", "/"],
+  ["login", "/"],
   ["media", "/media"],
   ...archive.map((entry) => [`story-${entry.key}`, `/media/${entry.key}`]),
   ["divisions", "/divisions"],
@@ -43,6 +45,7 @@ const pages = [
 ];
 const galleryScript = `document.querySelectorAll('.photo-gallery').forEach(g=>{let n=0;const stage=g.querySelector('.gallery-stage');const thumbs=[...g.querySelectorAll('.gallery-thumbnails button')];const images=thumbs.length?thumbs.map(t=>t.querySelector('img').src):[stage.querySelector('img').src];const modal=g.querySelector('dialog');function show(i){n=(i+images.length)%images.length;stage.querySelector('img').src=images[n];modal.querySelector('img').src=images[n];g.querySelectorAll('.gallery-controls>span').forEach(c=>c.textContent=String(n+1).padStart(2,'0')+' / '+String(images.length).padStart(2,'0'));thumbs.forEach((t,j)=>t.setAttribute('aria-current',String(j===n)));}g.querySelectorAll('[aria-label="Следующее изображение"]').forEach(b=>b.onclick=()=>show(n+1));g.querySelectorAll('[aria-label="Предыдущее изображение"]').forEach(b=>b.onclick=()=>show(n-1));thumbs.forEach((t,i)=>t.onclick=()=>show(i));stage.onclick=()=>modal.showModal();g.querySelector('.gallery-close').onclick=()=>modal.close();g.onkeydown=e=>{if(e.key==='ArrowRight'){e.preventDefault();show(n+1);}if(e.key==='ArrowLeft'){e.preventDefault();show(n-1);}};});`;
 const selectScript = `document.querySelectorAll('.select-field').forEach(root=>{const button=root.querySelector('[role=combobox]');const list=root.querySelector('[role=listbox]');const options=[...list.querySelectorAll('[role=option]')];let active=0;function close(){list.hidden=true;button.setAttribute('aria-expanded','false');button.removeAttribute('aria-activedescendant');}function highlight(n){active=(n+options.length)%options.length;options.forEach((o,i)=>o.dataset.highlighted=String(i===active));button.setAttribute('aria-activedescendant',options[active].id);}function open(){document.querySelectorAll('.select-field [role=combobox][aria-expanded=true]').forEach(b=>{if(b!==button)b.click();});list.hidden=false;button.setAttribute('aria-expanded','true');highlight(Math.max(0,options.findIndex(o=>o.getAttribute('aria-selected')==='true')));}function choose(i){button.querySelector('.select-value').textContent=options[i].querySelector('span').textContent;options.forEach((o,j)=>o.setAttribute('aria-selected',String(i===j)));close();button.focus();}button.onclick=()=>list.hidden?open():close();options.forEach((o,i)=>{o.onclick=()=>choose(i);o.onpointermove=()=>highlight(i);o.onmousedown=e=>e.preventDefault();});button.onkeydown=e=>{if(e.key==='Escape'||e.key==='Tab'){close();return;}if(['ArrowDown','ArrowUp','Home','End','Enter',' '].includes(e.key)){e.preventDefault();if(list.hidden){open();return;}if(e.key==='Enter'||e.key===' ')choose(active);else highlight(e.key==='Home'?0:e.key==='End'?options.length-1:active+(e.key==='ArrowDown'?1:-1));}};document.addEventListener('pointerdown',e=>{if(!root.contains(e.target))close();});root.addEventListener('focusout',e=>{if(!root.contains(e.relatedTarget))close();});});`;
+const loginScript = `(()=>{const dialog=document.querySelector('.login-dialog');const trigger=document.querySelector('.editor-login');trigger.onclick=()=>{dialog.showModal();trigger.setAttribute('aria-expanded','true');dialog.querySelector('input').focus();};dialog.querySelector('.login-close').onclick=()=>dialog.close();dialog.addEventListener('close',()=>{trigger.setAttribute('aria-expanded','false');trigger.focus();});dialog.onclick=e=>{if(e.target===dialog)dialog.close();};dialog.querySelector('form').onsubmit=e=>e.preventDefault();})();`;
 for (const theme of ["dark", "light"])
   for (const [name, path] of pages) {
     Object.defineProperty(globalThis, "localStorage", {
@@ -58,6 +61,18 @@ for (const theme of ["dark", "light"])
       csrf: "design-only",
     });
     client.setQueryData(["admin-content"], { events: [], media: [] });
+    const loginClient = new QueryClient({
+      defaultOptions: { queries: { staleTime: Infinity } },
+    });
+    loginClient.setQueryData(["session"], {
+      admin: false,
+      csrf: "design-only",
+    });
+    const loginMarkup = renderToStaticMarkup(
+      <QueryClientProvider client={loginClient}>
+        <LoginDialog onClose={() => {}} />
+      </QueryClientProvider>,
+    );
     let markup = renderToStaticMarkup(
       <QueryClientProvider client={client}>
         <MemoryRouter initialEntries={[path]}>
@@ -78,7 +93,7 @@ for (const theme of ["dark", "light"])
 
     await writeFile(
       `design/${name}-${theme}.html`,
-      `<!doctype html><html lang="ru" data-theme="${theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Северный человек · ${name} · ${theme}</title><style>${css}</style></head><body>${markup}<script>${script}${galleryScript}${selectScript}</script></body></html>`,
+      `<!doctype html><html lang="ru" data-theme="${theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Северный человек · ${name} · ${theme}</title><style>${css}</style></head><body>${markup}${loginMarkup}<script>${script}${galleryScript}${selectScript}${loginScript}${name === "login" ? "document.querySelector('.editor-login').click();" : ""}</script></body></html>`,
     );
   }
 const entry = await readFile("index.html", "utf8");

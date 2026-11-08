@@ -1,8 +1,16 @@
+import { LoginDialog } from "../features/editor-login";
 import { channels } from "../shared/config/channels";
 import { useQuery } from "@tanstack/react-query";
 import { loadContent } from "../shared/api";
 import { useEffect, useState } from "react";
-import { Link, NavLink, Routes, Route, useLocation } from "react-router-dom";
+import {
+  Link,
+  NavLink,
+  Routes,
+  Route,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { Sun, Moon, Menu, X, ArrowUpRight, LogIn } from "lucide-react";
 import { PortalPage, MediaDetail } from "../pages/portal";
 import { AdminPage } from "../pages/admin";
@@ -25,6 +33,8 @@ export function App() {
     () => localStorage.getItem("theme") !== "light",
   );
   const [open, setOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const navigate = useNavigate();
   const location = useLocation();
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? "dark" : "light";
@@ -32,6 +42,7 @@ export function App() {
   }, [dark]);
   useEffect(() => {
     setOpen(false);
+    setLoginOpen(false);
     window.scrollTo(0, 0);
   }, [location.pathname]);
   return (
@@ -64,15 +75,21 @@ export function App() {
             ))}
           </nav>
           <div className="header-actions">
-            <Link
+            <button
+              type="button"
               className="editor-login"
-              to="/admin"
+              aria-haspopup="dialog"
+              aria-expanded={loginOpen}
+              onClick={() => {
+                setOpen(false);
+                setLoginOpen(true);
+              }}
               aria-label="Войти для редакции"
               title="Войти для редакции"
             >
               <LogIn size={18} aria-hidden="true" />
               Войти
-            </Link>
+            </button>
             <button
               className="icon-button theme-toggle"
               aria-label={
@@ -93,6 +110,15 @@ export function App() {
           </button>
         </div>
       </header>
+      {loginOpen && (
+        <LoginDialog
+          onClose={() => setLoginOpen(false)}
+          onSuccess={() => {
+            setLoginOpen(false);
+            navigate("/admin");
+          }}
+        />
+      )}
       <Routes>
         <Route path="/" element={<PortalPage />} />
         <Route path="/media" element={<PortalPage />} />
