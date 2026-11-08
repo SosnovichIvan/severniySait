@@ -22,8 +22,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           [[ "$TAG" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
-          git fetch origin main
-          git merge-base --is-ancestor HEAD origin/main
+          ./scripts/verify-release.sh "$TAG"
+          test "$(git rev-parse HEAD)" = "$(git rev-parse "refs/release-tags/$TAG^{commit}")"
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24.12.0"
