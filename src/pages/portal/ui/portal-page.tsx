@@ -1,3 +1,4 @@
+import { channels } from "../../../shared/config/channels";
 import { sortMedia } from "../../../shared/lib/media-chronology";
 import { TextWithLinks } from "../../../shared/ui/text-with-links";
 import {
@@ -20,32 +21,7 @@ import {
   Package,
 } from "lucide-react";
 import { loadContent, divisions } from "../../../shared/api";
-const channels = [
-  {
-    name: "Telegram",
-    note: "Всероссийский ресурс",
-    url: "https://t.me/sevchelrussia",
-    short: "TG",
-  },
-  {
-    name: "ВКонтакте",
-    note: "Страница Михаила Маваши",
-    url: "https://vk.ru/m.f.mavashi",
-    short: "VK",
-  },
-  {
-    name: "MAX",
-    note: "Канал Михаила Маваши",
-    url: "https://max.ru/channel_mikhailmavashi",
-    short: "М",
-  },
-  {
-    name: "Северная трибуна",
-    note: "Канал проекта",
-    url: "https://t.me/slavicsupport",
-    short: "СТ",
-  },
-];
+
 export function PortalPage() {
   const path = useLocation().pathname;
   const { data, isPending, error, refetch } = useQuery({
@@ -116,12 +92,6 @@ export function PortalPage() {
     <main id="main" className="container">
       {isHome ? (
         <>
-          <div className="eyebrow pt-10">
-            <span className="status-dot" /> ИНФОРМАЦИОННЫЙ ПОРТАЛ{" "}
-            <span className="ml-auto hidden sm:inline">
-              РОССИЯ · {new Date().getFullYear()}
-            </span>
-          </div>
           <section className="hero">
             <div className="hero-copy">
               <p className="eyebrow">Истории, события и люди</p>

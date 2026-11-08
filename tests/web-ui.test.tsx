@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -96,11 +102,19 @@ describe("public UI", () => {
       screen.getByRole("button", { name: "Закрыть меню" }),
     ).toHaveAttribute("aria-expanded", "true");
     await user.click(screen.getByRole("button", { name: "Закрыть меню" }));
-    await user.click(screen.getByRole("link", { name: "Медиапространство" }));
+    await user.click(
+      within(
+        screen.getByRole("navigation", { name: "Основная навигация" }),
+      ).getByRole("link", { name: "Медиапространство" }),
+    );
     expect(
       screen.getByRole("heading", { name: "Медиапространство." }),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole("link", { name: "Календарь событий" }));
+    await user.click(
+      within(
+        screen.getByRole("navigation", { name: "Основная навигация" }),
+      ).getByRole("link", { name: "Календарь событий" }),
+    );
     expect(
       screen.getByRole("heading", { name: "Календарь событий." }),
     ).toBeInTheDocument();

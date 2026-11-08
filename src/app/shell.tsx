@@ -1,3 +1,4 @@
+import { channels } from "../shared/config/channels";
 import { useQuery } from "@tanstack/react-query";
 import { loadContent } from "../shared/api";
 import { useEffect, useState } from "react";
@@ -53,12 +54,6 @@ export function App() {
               alt=""
               aria-hidden="true"
             />
-
-            <span>
-              СЕВЕРНЫЙ
-              <br />
-              ЧЕЛОВЕК<small>ИНФОРМАЦИОННЫЙ ПОРТАЛ</small>
-            </span>
           </Link>
           <nav
             className={open ? "navigation open" : "navigation"}
@@ -106,15 +101,54 @@ export function App() {
           }
         />
       </Routes>
-      <footer className="site-footer container">
-        <Link className="brand" to="/">
-          СЕВЕРНЫЙ ЧЕЛОВЕК<span className="heading-dot">.</span>
-        </Link>
-        <p>Медиа · Подразделения · События</p>
-        <Link to="/admin">
-          Вход для редакции <ArrowUpRight size={14} />
-        </Link>
-        <small>© {new Date().getFullYear()} · Информационный портал</small>
+      <footer className="site-footer">
+        <div className="container">
+          <div className="footer-grid">
+            <div className="footer-about">
+              <Link className="footer-brand" to="/">
+                Северный человек
+              </Link>
+              <p>
+                Истории объединения, материалы из регионов и календарь событий —
+                в одном пространстве.
+              </p>
+              <Link className="footer-editor" to="/admin">
+                Вход для редакции <ArrowUpRight size={16} />
+              </Link>
+            </div>
+            <nav className="footer-navigation" aria-label="Навигация в футере">
+              <h2>Разделы</h2>
+              <ul>
+                {links.map(([url, label]) => (
+                  <li key={url}>
+                    <NavLink to={url} end>
+                      {label}
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+            <section
+              className="footer-channels"
+              aria-labelledby="footer-channels-title"
+            >
+              <h2 id="footer-channels-title">Площадки и каналы</h2>
+              <ul>
+                {channels.map((channel) => (
+                  <li key={channel.name}>
+                    <a href={channel.url} target="_blank" rel="noreferrer">
+                      {channel.name} <ArrowUpRight size={15} />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
+          <p className="footer-copyright">
+            © {new Date().getFullYear()} · Информационный портал «Северный
+            человек»
+          </p>
+        </div>
       </footer>
     </>
   );
