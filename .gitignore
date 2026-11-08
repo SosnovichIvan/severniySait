@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+data/
+uploads/
+cypress/screenshots/
+cypress/videos/
+.agent-skills-lab/runtime/
+.agent-skills-lab/backups/
+.DS_Store

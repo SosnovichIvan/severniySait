@@ -1,0 +1,115 @@
+{
+  "schema_version": 2,
+  "installer_version": "1.0.0",
+  "agent_adapter": "codex",
+  "skills": {
+    "ui-ux-design": {
+      "name": "UI/UX Design",
+      "description": "Локальный поиск и применение UI/UX-рекомендаций: visual direction, design systems, accessibility, interaction, responsive layout, typography, color и charts.",
+      "options": [],
+      "option_names": [],
+      "version": "0.2.0",
+      "required_by": [],
+      "installed_at": "2026-11-08T09:43:27.578003+00:00",
+      "content_sha256": "0908771c37f1b30fe3c1f27f7344cdf80e86844dac7a69ee586b28352764a5c7"
+    },
+    "frontend-engineering": {
+      "name": "Frontend Engineering",
+      "description": "Реализация frontend-сценариев с архитектурой, доступностью, API и проверками выбранного стека.",
+      "options": [
+        "typescript",
+        "react",
+        "structure-fsd"
+      ],
+      "option_names": [
+        "TypeScript",
+        "React",
+        "Feature-Sliced Design"
+      ],
+      "version": "0.1.0",
+      "required_by": [],
+      "installed_at": "2026-11-08T09:43:27.578003+00:00",
+      "content_sha256": "d96dcf1e2a324e500fc29186f7b6759cdd2cf49a129f402f58c35c753f35fec8"
+    },
+    "backend-engineering": {
+      "name": "Backend Engineering",
+      "description": "Реализация API, domain logic, persistence, безопасности и эксплуатации backend-сервисов.",
+      "options": [
+        "node-typescript"
+      ],
+      "option_names": [
+        "Node.js / TypeScript"
+      ],
+      "version": "0.1.0",
+      "required_by": [],
+      "installed_at": "2026-11-08T09:43:27.578003+00:00",
+      "content_sha256": "67692e0391e8b0943d02f8ca7cf6fb24d390012340b0604e588b5ca99ba2ed5b"
+    },
+    "database-engineering": {
+      "name": "Database Engineering",
+      "description": "Схемы, SQL, индексы, миграции и backfill реляционных БД.",
+      "options": [
+        "sqlite"
+      ],
+      "option_names": [
+        "SQLite"
+      ],
+      "version": "0.1.0",
+      "required_by": [],
+      "installed_at": "2026-11-08T09:43:27.578003+00:00",
+      "content_sha256": "e8ec202cd81de2e1ad5d8ec4eea9baea6f3523c02cad8a7348704b01723a99dc"
+    },
+    "project-architecture": {
+      "name": "Project Architecture",
+      "description": "Границы системы, контракты, ADR и план реализации/перехода.",
+      "options": [],
+      "option_names": [],
+      "version": "0.1.0",
+      "required_by": [],
+      "installed_at": "2026-11-08T09:43:27.578003+00:00",
+      "content_sha256": "c77a9a4eb08c4ab95a66840366a3385df79aa0eeb66f0a61eafbcf2b5d1e4333"
+    },
+    "ci-engineering": {
+      "name": "CI Engineering",
+      "description": "PR-проверки по составу приложений, сервисов и инфраструктуры: тесты, coverage, контракты, миграции и required gates.",
+      "options": [],
+      "option_names": [],
+      "version": "0.1.0",
+      "required_by": [],
+      "installed_at": "2026-11-08T09:43:27.578003+00:00",
+      "content_sha256": "f02eb98bda4e749894aaf5a6e2ea42a91ffdae752ce7866c4be028e4e571bd75"
+    }
+  },
+  "policies": {
+    "project-rules": {
+      "approved_at": "2026-11-08T09:43:27.580084+00:00",
+      "consent": "cli",
+      "rules": {
+        "ui-ux-design": {
+          "source": "skills/ui-ux-design/references/project-rules.md",
+          "sha256": "797a5b40011d3f6a6918e8e70c0fcfaee5e5fec59e74e4389d616fab6e5e1dfd"
+        },
+        "frontend-engineering": {
+          "source": "skills/frontend-engineering/references/project-rules.md",
+          "sha256": "0f4607e5c09391e5ea7bce3555452ce607604e1c9fcb97ca67eb7dc7748159d4"
+        },
+        "backend-engineering": {
+          "source": "skills/backend-engineering/references/project-rules.md",
+          "sha256": "2ad42dd14ec2ae4fe0c44d6681aaf3a0250992b9cc68b04ab293581071fedb3e"
+        },
+        "database-engineering": {
+          "source": "skills/database-engineering/references/project-rules.md",
+          "sha256": "71cfd33dc4db519f4f016544d3c90708e19b0704a90aa0434990ef573cc3600f"
+        },
+        "project-architecture": {
+          "source": "skills/project-architecture/references/project-rules.md",
+          "sha256": "59856f05c7f359a1816e3640ecd595ff117aab225cf85fd456479240f4433783"
+        },
+        "delivery": {
+          "source": "agents/rules/delivery.md",
+          "sha256": "827344d88ae35926cdae8ceee09b82e6ffa923e6e6ea10259ee2fadf63347757"
+        }
+      }
+    }
+  }
+}
