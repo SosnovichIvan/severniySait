@@ -168,6 +168,9 @@ export function PortalPage() {
             id="founder"
             aria-labelledby="founder-title"
           >
+            <h2 className="founder-intro" id="founder-title">
+              <span>Наш бессменный лидер</span> <span>и основатель</span>
+            </h2>
             <div className="founder-profile">
               <figure className="founder-portrait">
                 <img
@@ -177,29 +180,13 @@ export function PortalPage() {
                   height="320"
                   loading="lazy"
                 />
-                <figcaption>
-                  Фото из{" "}
-                  <a
-                    href="https://t.me/mikhailmavashi"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    официального Telegram-канала <ArrowUpRight size={12} />
-                  </a>
-                </figcaption>
               </figure>
               <div className="founder-identity">
-                <p className="eyebrow">ЛИДЕР И ОСНОВАТЕЛЬ</p>
-                <h2 id="founder-title" aria-label="Михаил Маваши">
+                <h3 aria-label="Михаил Маваши">
                   Михаил
                   <br />
                   <span>Маваши</span>
-                </h2>
-                <p className="founder-fullname">Михаил Фёдорович Ниц</p>
-                <p className="founder-role">
-                  Наш бессменный лидер и основатель объединения «Северный
-                  человек».
-                </p>
+                </h3>
               </div>
             </div>
             <div className="founder-story">
