@@ -1,6 +1,6 @@
 import { UpdateEditor } from "./update-editor";
 import { ChannelEditor } from "./channel-editor";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { DivisionEditor } from "./division-editor";
 import { LoginDialog } from "../../../features/editor-login";
 import { ConfirmDialog } from "../../../shared/ui/confirm-dialog";
@@ -84,6 +84,7 @@ export function AdminPage({ themeToggle }: { themeToggle?: ReactNode }) {
       await send("/api/logout", "POST", {}, csrf);
       client.removeQueries({ queryKey: ["admin-content"] });
       client.removeQueries({ queryKey: ["deployments"] });
+      navigate("/", { replace: true });
       await client.invalidateQueries({ queryKey: ["session"] });
     });
   }
@@ -223,9 +224,9 @@ export function AdminPage({ themeToggle }: { themeToggle?: ReactNode }) {
     <main id="main" className="container admin">
       <h1 className="sr-only">Управление материалами сайта</h1>
       <div className="admin-toolbar">
-        <Link
+        <a
           className="header-brand"
-          to="/"
+          href="/"
           aria-label="Северный человек — главная"
         >
           <span className="header-brand-name" aria-hidden="true">
@@ -234,7 +235,7 @@ export function AdminPage({ themeToggle }: { themeToggle?: ReactNode }) {
           <span className="header-brand-short" aria-hidden="true">
             СЧ
           </span>
-        </Link>
+        </a>
         <div className="admin-toolbar-actions">
           {themeToggle}
           <button

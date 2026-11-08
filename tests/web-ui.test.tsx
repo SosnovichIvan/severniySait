@@ -251,7 +251,7 @@ describe("admin UI", () => {
       }
     });
     const user = userEvent.setup();
-    mount(<AdminPage />, "/admin", null);
+    const client = mount(<App />, "/admin", null);
     const input = await screen.findByLabelText("Пароль администратора");
     await user.type(input, "test-password");
     await user.click(screen.getByRole("button", { name: "Войти" }));
@@ -268,8 +268,14 @@ describe("admin UI", () => {
     ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Выйти" }));
     expect(
-      await screen.findByRole("heading", { name: "Вход в админку" }),
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Северный человек",
+      }),
     ).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(client.getQueryData(["admin-content"])).toBeUndefined();
+    expect(client.getQueryData(["deployments"])).toBeUndefined();
   });
   it("creates, edits, cancels, and deletes events with confirmation", async () => {
     mockApi();
