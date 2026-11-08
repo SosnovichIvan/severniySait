@@ -153,7 +153,7 @@ describe('Editorial workspace and channels',()=>{
   cy.get('header.site-header, footer.site-footer').should('not.exist');
   cy.contains('ПАНЕЛЬ УПРАВЛЕНИЯ').should('not.exist');cy.get('button').filter(':contains("Выйти")').should('have.length',1);
   cy.get('.tabs').contains('button','Площадки и каналы').click();
-  cy.contains('label','Название площадки').find('input').type('Тестовый канал');
+  cy.contains('button','Добавить площадку').click();cy.contains('label','Название площадки').find('input').should('be.focused').type('Тестовый канал');
   cy.contains('label','Ссылка на площадку').find('input').type('https://example.org/editorial-test');
   cy.contains('label','Описание площадки').find('textarea').type('Канал для проверки публикации');
   cy.contains('label','Короткое обозначение').find('input').type('ТК');

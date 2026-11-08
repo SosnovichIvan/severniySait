@@ -703,6 +703,12 @@ it("edits channels, retains a failed draft, updates publication and removes with
   );
   await user.click(screen.getByRole("button", { name: "Новая площадка" }));
   expect(screen.getByLabelText("Название площадки")).toHaveValue("");
+  await user.click(
+    screen.getByRole("button", { name: "Редактировать Новый канал" }),
+  );
+  await user.click(screen.getByRole("button", { name: "Добавить площадку" }));
+  expect(screen.getByLabelText("Название площадки")).toHaveValue("");
+  expect(screen.getByLabelText("Название площадки")).toHaveFocus();
   await user.click(screen.getByRole("button", { name: "Удалить Новый канал" }));
   await user.click(screen.getByRole("button", { name: /^Удалить$/ }));
   expect(

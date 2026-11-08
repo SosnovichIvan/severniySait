@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { PenLine, Plus, Trash2 } from "lucide-react";
 import type { ChannelRecord } from "../../../../contracts/content";
 const blank = { name: "", note: "", short: "", url: "", published: false };
@@ -21,6 +21,13 @@ export function ChannelEditor({
   const [draft, setDraft] = useState<
     Omit<ChannelRecord, "id"> & { id?: string }
   >(blank);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<HTMLElement>(null);
+  function addChannel() {
+    setDraft(blank);
+    nameRef.current?.focus();
+    editorRef.current?.scrollIntoView({ block: "start" });
+  }
   async function save(event: FormEvent) {
     event.preventDefault();
     try {
@@ -33,7 +40,17 @@ export function ChannelEditor({
   return (
     <div className="admin-grid">
       <section className="panel">
-        <h2>Площадки и каналы</h2>
+        <div className="channel-editor-heading">
+          <h2>Площадки и каналы</h2>
+          <button
+            className="button"
+            type="button"
+            disabled={pending}
+            onClick={addChannel}
+          >
+            <Plus size={16} /> Добавить площадку
+          </button>
+        </div>
         <p>Опубликованные ссылки появятся в футере и медиапространстве.</p>
         {channels.map((channel) => (
           <article className="admin-row" key={channel.id}>
@@ -79,7 +96,7 @@ export function ChannelEditor({
         ))}
         {!channels.length && <p className="empty">Добавьте первую площадку.</p>}
       </section>
-      <section className="panel editor">
+      <section className="panel editor" ref={editorRef}>
         <h2>{draft.id ? "Редактировать площадку" : "Новая площадка"}</h2>
         <form onSubmit={save}>
           <label>
@@ -87,6 +104,7 @@ export function ChannelEditor({
             <input
               required
               maxLength={100}
+              ref={nameRef}
               value={draft.name}
               onChange={(e) => setDraft({ ...draft, name: e.target.value })}
             />
@@ -139,7 +157,7 @@ export function ChannelEditor({
               className="button"
               type="button"
               disabled={pending}
-              onClick={() => setDraft(blank)}
+              onClick={addChannel}
             >
               <Plus size={16} /> Новая площадка
             </button>
