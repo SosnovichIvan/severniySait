@@ -1,0 +1,94 @@
+name: Versioned release
+on:
+  push:
+    tags: ["*.*.*"]
+permissions:
+  contents: read
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify immutable version and main ancestry
+        env:
+          TAG: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$TAG" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          git fetch origin main
+          git merge-base --is-ancestor HEAD origin/main
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24.12.0"
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run check
+      - run: npm run test:e2e
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: ghcr.io/sosnovichivan/severniysait:${{ github.ref_name }}
+      - name: Verify container before publication
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          trap 'docker rm -f release-smoke; docker volume rm release-data release-uploads' EXIT
+          docker volume create release-data
+          docker volume create release-uploads
+          start_container() {
+            docker run -d --name release-smoke --health-interval=2s --health-start-period=5s --health-retries=10 -v release-data:/app/data -v release-uploads:/app/uploads -e SESSION_SECRET=release-smoke-only-secret-with-32-characters -e ADMIN_PASSWORD_HASH=smoke-only-no-real-password "ghcr.io/sosnovichivan/severniysait:$TAG"
+            for _ in $(seq 1 40); do
+              state="$(docker inspect --format '{{.State.Health.Status}}' release-smoke)"
+              if [ "$state" = healthy ]; then break; fi
+              if [ "$state" = unhealthy ]; then docker logs release-smoke; return 1; fi
+              sleep 2
+            done
+            test "$state" = healthy
+          }
+          start_container
+          docker exec release-smoke node --import tsx --input-type=module -e '
+            import {Store} from "./server/repository/store.ts";
+            import {writeFileSync} from "node:fs";
+            const store = new Store("data/portal.sqlite");
+            const channel = store.list(true).channels[0];
+            store.saveChannel({...channel,name:"Editorial persisted change"},channel.id);
+            store.addMedia({title:"Editorial persisted media",description:"Saved before replacement",url:"/uploads/persisted.txt",kind:"image",published:true});
+            writeFileSync("uploads/persisted.txt","editorial-file");
+            store.close();'
+          docker rm -f release-smoke
+          start_container
+          docker exec release-smoke node --input-type=module -e '
+            const response = await fetch("http://127.0.0.1:3001/api/content");
+            const content = await response.json();
+            if (!response.ok || !content.channels.some(c=>c.name==="Editorial persisted change") || !content.media.some(m=>m.title==="Editorial persisted media")) process.exit(1);
+            const file = await fetch("http://127.0.0.1:3001/uploads/persisted.txt");
+            if (!file.ok || await file.text()!=="editorial-file") process.exit(1);'
+          docker exec release-smoke node -e "fetch('http://127.0.0.1:3001/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      - name: Publish verified image
+        env:
+          TAG: ${{ github.ref_name }}
+        run: docker push "ghcr.io/sosnovichivan/severniysait:$TAG"
+  deploy:
+    needs: release
+    permissions:
+      contents: read
+    uses: ./.github/workflows/deploy.yml
+    with:
+      version: ${{ github.ref_name }}
+    secrets: inherit

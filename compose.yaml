@@ -1,0 +1,41 @@
+name: severniy
+services:
+  app:
+    image: ghcr.io/sosnovichivan/severniysait:${RELEASE_TAG:?Set RELEASE_TAG to a published version}
+    restart: unless-stopped
+    init: true
+    environment:
+      APP_VERSION: ${RELEASE_TAG}
+      SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:?Set ADMIN_PASSWORD_HASH}
+    volumes:
+      - portal-data:/app/data
+      - portal-uploads:/app/uploads
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    networks: [portal]
+  proxy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?Set SITE_ADDRESS to your domain}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+    networks: [portal]
+networks:
+  portal:
+volumes:
+  portal-data:
+  portal-uploads:
+  caddy-data:
+  caddy-config:
