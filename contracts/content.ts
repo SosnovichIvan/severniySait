@@ -17,6 +17,7 @@ export const mediaSchema = mediaInput.extend({
   id: z.string(),
   url: z.string(),
   kind: z.enum(["image", "video"]),
+  images: z.array(z.object({ id: z.string(), url: z.string() })).optional(),
 });
 export const contentSchema = z.object({
   events: z.array(eventSchema),

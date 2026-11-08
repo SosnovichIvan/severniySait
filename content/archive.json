@@ -29,7 +29,14 @@
     "description": "19 марта 2026 · Ульяновск\n\nВ Спасо-Вознесенском кафедральном соборе состоялся молебен с участием представителей регионального отделения Всемирного русского народного собора, «Русской общины», «Северного человека» и симбирского казачества. Богослужение совершил митрополит Симбирский и Новоспасский Лонгин.\n\nФото: сайт Симбирской митрополии.\nИсточник: https://mitropolia-simbirsk.ru/2026/03/19/mitropolit-longin-sovershil-moleben-dlya-uchastnikov-obshhestvennyh-organizaczij",
     "sourceUrl": "https://mitropolia-simbirsk.ru/2026/03/19/mitropolit-longin-sovershil-moleben-dlya-uchastnikov-obshhestvennyh-organizaczij",
     "file": "ulyanovsk-meeting-2026.webp",
-    "eventDate": "2026-03-19"
+    "eventDate": "2026-03-19",
+    "gallery": [
+      "ulyanovsk-meeting-2026-02.webp",
+      "ulyanovsk-meeting-2026-03.webp",
+      "ulyanovsk-meeting-2026-04.webp",
+      "ulyanovsk-meeting-2026-05.webp",
+      "ulyanovsk-meeting-2026-06.webp"
+    ]
   },
   {
     "key": "ulyanovsk-cleanup-2025",
@@ -37,7 +44,14 @@
     "description": "25–26 октября 2025 · Ульяновск\n\nУчастники Троицкой общины Симбирской земли, симбирского казачества и «Северного человека» привели в порядок место массовых захоронений у Ульяновского моторного завода. Они убрали сухую траву и мусор, расчистили деревья и кустарник; для планировки территории использовали спецтехнику.\n\nФото: сайт Симбирской митрополии.\nИсточник: https://mitropolia-simbirsk.ru/2025/10/27/na-meste-massovogo-zahoroneniya-repressirovannyh-proshel-bolshoj-subbotnik",
     "sourceUrl": "https://mitropolia-simbirsk.ru/2025/10/27/na-meste-massovogo-zahoroneniya-repressirovannyh-proshel-bolshoj-subbotnik",
     "file": "ulyanovsk-cleanup-2025.webp",
-    "eventDate": "2025-10-25"
+    "eventDate": "2025-10-25",
+    "gallery": [
+      "ulyanovsk-cleanup-2025-02.webp",
+      "ulyanovsk-cleanup-2025-03.webp",
+      "ulyanovsk-cleanup-2025-04.webp",
+      "ulyanovsk-cleanup-2025-05.webp",
+      "ulyanovsk-cleanup-2025-06.webp"
+    ]
   },
   {
     "key": "poetry-duel-2024",
@@ -62,5 +76,49 @@
     "description": "27 ноября 2022 · архивная публикация\n\nВ ранней публикации краснодарского канала рассказывается о начале работы «Северного человека» и заявленных направлениях: взаимопомощи, культурных встречах, совместном досуге и спорте. В сообщении началом деятельности названо 25 ноября 2022 года. Карточка датирована днём публикации источника.\n\nИллюстрация: официальный логотип объединения, не фотография мероприятия.\nИсточник: https://t.me/krasnodarsevchel/12",
     "sourceUrl": "https://t.me/krasnodarsevchel/12",
     "file": "origins-2022.png"
+  },
+  {
+    "key": "aksay-cleanup-2025",
+    "title": "Экосубботник в балке Клиновой",
+    "eventDate": "2025-05-17",
+    "sourceUrl": "https://pobeda-aksay.ru/2025/05/23/v-aksajskom-rajone-proshel-eshhe-odin-ekosubbotnik/",
+    "description": "17 мая 2025 · Аксайский район\n\nОколо 70 человек вышли на уборку балки Клиновой. Среди организаторов были НКО «Северный человек», администрация Аксая, экоактивисты и инициативная группа «Волонтеры Мухиной балки».\n\nУчастники собирали мусор; после завершения работ отходы вывезли грузовиком. Балка ценна в том числе редкими растениями, поэтому уборка стала частью заботы о природной территории.\n\nФото: архив канала «Балка Клиновая. Аксай», опубликовано газетой «Победа».\nИсточник: https://pobeda-aksay.ru/2025/05/23/v-aksajskom-rajone-proshel-eshhe-odin-ekosubbotnik/",
+    "file": "aksay-cleanup-2025-01.jpg",
+    "gallery": [
+      "aksay-cleanup-2025-02.jpg",
+      "aksay-cleanup-2025-03.jpg",
+      "aksay-cleanup-2025-04.jpg"
+    ]
+  },
+  {
+    "key": "hockey-season-2026",
+    "title": "Хоккейный сезон: бронза команды «Северный человек»",
+    "eventDate": "2026-05-18",
+    "sourceUrl": "https://spbhlmedia.ru/archives/61013",
+    "description": "18 мая 2026 · Санкт-Петербург · дата публикации\n\nМедиапортал Санкт-Петербургской хоккейной лиги опубликовал интервью с нападающим Владимиром Окуневичем. Материал посвящён команде «Северный человек», завоевавшей бронзу в дебютном для неё чемпионате СПбХЛ.\n\nВ интервью игрок рассказал о формировании состава, взаимодействии опытных хоккеистов и молодых игроков, сыгранности и ходе сезона. Команда относится к петербургскому отделению объединения.\n\nЭто материал об итогах сезона, а не отчёт об отдельном матче: указан день публикации интервью. Фото команды предоставлено Санкт-Петербургской хоккейной лигой и опубликовано в материале.\nИсточник: https://spbhlmedia.ru/archives/61013",
+    "file": "hockey-season-2026-01.jpg",
+    "gallery": []
+  },
+  {
+    "key": "tver-conference-2026",
+    "title": "«Сообщество надёжных людей»: конференция в Твери",
+    "eventDate": "2026-09-26",
+    "sourceUrl": "https://vedtver.ru/news/society/v-tveri-proshla-konferencija-soobshhestvo-nadezhnyh-ljudej/",
+    "description": "26 сентября 2026 · Тверь\n\nКонференция «Сообщество надёжных людей» собрала более 70 участников: представителей спортивных федераций, благотворительных фондов, общественных организаций, предпринимателей и горожан.\n\nУчастники подвели итоги деятельности сообщества, обсудили помощь нуждающимся и новые совместные проекты. Людям и организациям, поддерживавшим инициативы, вручили благодарности.\n\nФото: Иван Попян / «Северный человек», опубликовано «Тверскими ведомостями».\nИсточник: https://vedtver.ru/news/society/v-tveri-proshla-konferencija-soobshhestvo-nadezhnyh-ljudej/",
+    "file": "tver-conference-2026-01.webp",
+    "gallery": ["tver-conference-2026-02.webp"]
+  },
+  {
+    "key": "children-safety-2026",
+    "title": "Квест по уличной безопасности в «Детском ковчеге»",
+    "eventDate": "2026-07-21",
+    "sourceUrl": "https://dobro.live/publikacii/igra-kotoraya-spasaet-kak-severnyj-duh-i-uroki-dlya-geroev-nauchili-detej-iz-detskogo-kovchega-govorit-net-neznakomcam",
+    "description": "21 июля 2026 · Санкт-Петербург · дата публикации\n\nВолонтёры центра «Северный Дух», сообщества «Северный человек» и тренеры школы «Уроки для героев» провели для воспитанников приюта «Детский ковчег» игровой квест по безопасности.\n\nНа пяти станциях дети отрабатывали правила поведения на улице и в общении с незнакомцами. В ролевых заданиях участвовали подростки-волонтёры из «Молодёжки». Формат позволил разобрать практические ситуации через игру.\n\nОрганизатор опубликовал рассказ 21 июля; точный день проведения не указан. Фото: публикация АНО ЦСПВ «Северный Дух» на Добро.Медиа.\nИсточник: https://dobro.live/publikacii/igra-kotoraya-spasaet-kak-severnyj-duh-i-uroki-dlya-geroev-nauchili-detej-iz-detskogo-kovchega-govorit-net-neznakomcam",
+    "file": "children-safety-2026-02.jpg",
+    "gallery": [
+      "children-safety-2026-03.jpg",
+      "children-safety-2026-04.jpg",
+      "children-safety-2026-05.jpg"
+    ]
   }
 ]

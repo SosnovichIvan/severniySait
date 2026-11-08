@@ -282,7 +282,7 @@ describe("API and storage", () => {
     expect(second.db.pragma("integrity_check", { simple: true })).toBe("ok");
     expect(second.db.pragma("foreign_key_check")).toEqual([]);
     expect(second.db.pragma("foreign_keys", { simple: true })).toBe(1);
-    expect(second.db.prepare("SELECT * FROM migrations").all()).toHaveLength(2);
+    expect(second.db.prepare("SELECT * FROM migrations").all()).toHaveLength(3);
     second.close();
     const sessions = new SqliteSessions(store);
     sessions.get("missing", (_e, v) => expect(v).toBeNull());
@@ -364,4 +364,99 @@ it("validates archive dates, persists them and preserves them for older editors"
     ).status,
   ).toBe(200);
   expect(store.list().media[0].eventDate).toBe("");
+});
+
+it("owns gallery photos, hides drafts, validates uploads and removes associated files", async () => {
+  const url = (id: string) => `/api/admin/media/${id}/images`;
+  expect(
+    (await agent.post(url("missing")).set("x-csrf-token", csrf)).status,
+  ).toBe(401);
+  await login();
+  const id = (await upload()).body.id;
+  const add = (owner: string, bytes = png) =>
+    agent
+      .post(url(owner))
+      .set("x-csrf-token", csrf)
+      .attach("file", bytes, "photo.png");
+  expect((await add("missing")).status).toBe(404);
+  expect((await agent.post(url(id)).set("x-csrf-token", csrf)).status).toBe(
+    400,
+  );
+  expect((await add(id, Buffer.from("not-an-image"))).status).toBe(400);
+  expect((await add(id, Buffer.from("0000ftypisom"))).status).toBe(400);
+  const response = await add(id);
+  expect(response.status).toBe(201);
+  const image = store.images(id)[0];
+  expect((await agent.get(image.url)).status).toBe(200);
+  const anonymous = supertest(
+    createApp({
+      store,
+      uploadDir: join(dir, "uploads"),
+      sessionSecret: "test-secret-only-32-characters-long",
+      passwordHash: "unused",
+    }),
+  );
+  expect((await anonymous.get(image.url)).status).toBe(404);
+  expect((await anonymous.get("/api/content")).body.media).toEqual([]);
+  store.updateMedia(id, {
+    title: "Опубликованная галерея",
+    description: "Полный текст",
+    published: true,
+  });
+  expect((await anonymous.get(image.url)).status).toBe(200);
+  expect((await anonymous.get("/api/content")).body.media[0].images).toEqual([
+    image,
+  ]);
+  expect(
+    (
+      await agent
+        .delete(`${url("wrong")}/${image.id}`)
+        .set("x-csrf-token", csrf)
+    ).status,
+  ).toBe(404);
+  expect(
+    (await agent.delete(`${url(id)}/${image.id}`).set("x-csrf-token", csrf))
+      .status,
+  ).toBe(200);
+  expect((await agent.get(image.url)).status).toBe(404);
+  await add(id);
+  const remaining = store.images(id)[0];
+  await agent
+    .delete(`/api/admin/media/${id}`)
+    .set("x-csrf-token", csrf)
+    .expect(200);
+  expect(store.images(id)).toEqual([]);
+  expect((await agent.get(remaining.url)).status).toBe(404);
+  expect(store.db.pragma("foreign_key_check")).toEqual([]);
+});
+
+it("limits galleries and cleans up photos when persistence fails", async () => {
+  await login();
+  const id = (await upload()).body.id;
+  for (let i = 0; i < 30; i++) store.addImage(id, `/uploads/limit-${i}.jpg`);
+  const add = () =>
+    agent
+      .post(`/api/admin/media/${id}/images`)
+      .set("x-csrf-token", csrf)
+      .attach("file", png, "photo.png");
+  expect((await add()).status).toBe(400);
+  store.deleteImage(id, store.images(id)[0].id);
+  const fail = vi.spyOn(store, "addImage").mockImplementationOnce(() => {
+    throw new Error("storage");
+  });
+  const log = vi.spyOn(console, "error").mockImplementation(() => {});
+  expect((await add()).status).toBe(500);
+  fail.mockRestore();
+  const photo = store.images(id)[0];
+  vi.spyOn(store, "deleteImage").mockImplementationOnce(() => {
+    throw new Error("storage");
+  });
+  expect(
+    (
+      await agent
+        .delete(`/api/admin/media/${id}/images/${photo.id}`)
+        .set("x-csrf-token", csrf)
+    ).status,
+  ).toBe(500);
+  log.mockRestore();
 });

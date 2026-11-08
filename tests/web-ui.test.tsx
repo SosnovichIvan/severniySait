@@ -328,12 +328,36 @@ describe("admin UI", () => {
     );
   });
   it("uploads, edits and cancels media, shows drafts and empty state", async () => {
-    mockApi();
+    mockApi((url) =>
+      url === "/api/admin/content"
+        ? {
+            ...content,
+            media: [
+              {
+                ...photo,
+                published: false,
+                images: [{ id: "gallery-one", url: "/gallery.jpg" }],
+              },
+              video,
+            ],
+          }
+        : undefined,
+    );
     const user = userEvent.setup();
     mount(
       <AdminPage />,
       "/admin",
-      { ...content, media: [{ ...photo, published: false }, video] },
+      {
+        ...content,
+        media: [
+          {
+            ...photo,
+            published: false,
+            images: [{ id: "gallery-one", url: "/gallery.jpg" }],
+          },
+          video,
+        ],
+      },
       true,
     );
     await user.click(screen.getByRole("button", { name: "Медиа" }));
@@ -361,6 +385,25 @@ describe("admin UI", () => {
     expect(screen.getByLabelText("Название материала")).toHaveValue(
       photo.title,
     );
+    await user.click(
+      screen.getByRole("button", { name: "Удалить фотографию 1" }),
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Фотография удалена",
+    );
+    await user.upload(
+      screen.getByLabelText("Фотография для галереи"),
+      new File(["png"], "gallery.png", { type: "image/png" }),
+    );
+    fireEvent.submit(
+      screen.getByLabelText("Фотография для галереи").closest("form")!,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "Фотография добавлена",
+      ),
+    );
+
     await user.click(
       screen.getByRole("button", { name: "Отменить редактирование" }),
     );

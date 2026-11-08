@@ -24,6 +24,11 @@ export class Store {
           "ALTER TABLE media ADD COLUMN eventDate TEXT NOT NULL DEFAULT ''; INSERT INTO migrations VALUES(2);",
         );
       }
+      this.db.exec(`CREATE TABLE IF NOT EXISTS media_images(
+        id TEXT PRIMARY KEY, mediaId TEXT NOT NULL REFERENCES media(id) ON DELETE CASCADE,
+        url TEXT NOT NULL UNIQUE);
+        CREATE INDEX IF NOT EXISTS media_images_owner ON media_images(mediaId);
+        INSERT OR IGNORE INTO migrations VALUES(3);`);
     })();
   }
   list(admin = false) {
@@ -39,7 +44,11 @@ export class Store {
       .all() as (Omit<MediaRecord, "published"> & { published: number })[];
     return {
       events: events.map((e) => ({ ...e, published: !!e.published })),
-      media: media.map((e) => ({ ...e, published: !!e.published })),
+      media: media.map((e) => ({
+        ...e,
+        published: !!e.published,
+        images: this.images(e.id),
+      })),
     };
   }
   saveEvent(input: Omit<EventRecord, "id">, id: string = randomUUID()) {
@@ -93,8 +102,28 @@ export class Store {
   deleteMedia(id: string) {
     const row = this.db.prepare("SELECT url FROM media WHERE id=?").get(id) as
       { url: string } | undefined;
+    const images = this.images(id);
     this.db.prepare("DELETE FROM media WHERE id=?").run(id);
-    return row;
+    return row && { ...row, images };
+  }
+  images(mediaId: string) {
+    return this.db
+      .prepare("SELECT id,url FROM media_images WHERE mediaId=? ORDER BY rowid")
+      .all(mediaId) as { id: string; url: string }[];
+  }
+  addImage(mediaId: string, url: string) {
+    const id = randomUUID();
+    this.db
+      .prepare("INSERT INTO media_images(id,mediaId,url) VALUES(?,?,?)")
+      .run(id, mediaId, url);
+    return id;
+  }
+  deleteImage(mediaId: string, id: string) {
+    return this.db
+      .prepare(
+        "DELETE FROM media_images WHERE mediaId=? AND id=? RETURNING url",
+      )
+      .get(mediaId, id) as { url: string } | undefined;
   }
   close() {
     this.db.close();

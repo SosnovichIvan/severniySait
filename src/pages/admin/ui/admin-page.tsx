@@ -144,6 +144,20 @@ export function AdminPage() {
     });
     setFeedback("");
   }
+  function addGalleryImage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    const body = new FormData(formElement);
+    mutation.mutate(async () => {
+      await request(`/api/admin/media/${mediaEdit!.id}/images`, {
+        method: "POST",
+        headers: { "x-csrf-token": csrf },
+        body,
+      });
+      formElement.reset();
+      setFeedback("Фотография добавлена в галерею.");
+    });
+  }
   const notice = (
     <>
       {mutation.error && (
@@ -452,6 +466,58 @@ export function AdminPage() {
                 </button>
               )}
             </form>
+          )}
+          {tab === "media" && mediaEdit && (
+            <section className="editor-gallery">
+              <h2>Фотографии события</h2>
+              <p>
+                Обложка сохраняется отдельно. В галерею можно добавить до 30
+                фотографий.
+              </p>
+              <ul>
+                {(
+                  content.data?.media.find((item) => item.id === mediaEdit.id)
+                    ?.images ?? []
+                ).map((image, index) => (
+                  <li key={image.id}>
+                    <img src={image.url} alt={`Фотография ${index + 1}`} />
+                    <button
+                      type="button"
+                      className="button danger"
+                      disabled={mutation.isPending}
+                      aria-label={`Удалить фотографию ${index + 1}`}
+                      onClick={() =>
+                        mutation.mutate(async () => {
+                          await send(
+                            `/api/admin/media/${mediaEdit.id}/images/${image.id}`,
+                            "DELETE",
+                            {},
+                            csrf,
+                          );
+                          setFeedback("Фотография удалена.");
+                        })
+                      }
+                    >
+                      <Trash2 size={16} /> Удалить
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <form onSubmit={addGalleryImage}>
+                <label>
+                  Фотография для галереи
+                  <input
+                    type="file"
+                    name="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    required
+                  />
+                </label>
+                <button className="button" disabled={mutation.isPending}>
+                  Добавить фотографию
+                </button>
+              </form>
+            </section>
           )}
         </section>
       </div>

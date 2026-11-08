@@ -3,9 +3,11 @@ const config = JSON.parse(await readFile("design/opendesign.json", "utf8")) as {
   projectId: string;
 };
 const base = process.env.OPENDESIGN_API_URL ?? "http://127.0.0.1:56883";
+let layouts = 0;
 for (const name of await readdir("design")) {
   if (!/\.(html|png|jpg|webp)$/.test(name)) continue;
   const binary = !name.endsWith(".html");
+  if (!binary) layouts++;
   const response = await fetch(
     `${base}/api/projects/${config.projectId}/files`,
     {
@@ -24,4 +26,4 @@ for (const name of await readdir("design")) {
   if (!response.ok)
     throw new Error(`OpenDesign write ${name}: ${response.status}`);
 }
-console.log("OpenDesign: 13 layouts updated.");
+console.log(`OpenDesign: ${layouts} layouts updated.`);

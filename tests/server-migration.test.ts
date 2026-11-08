@@ -25,7 +25,7 @@ it("upgrades a populated v1 archive without losing data and reopens safely", asy
     store = new Store(path);
     expect(
       store.db.prepare("SELECT version FROM migrations ORDER BY version").all(),
-    ).toEqual([{ version: 1 }, { version: 2 }]);
+    ).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }]);
     expect(store.list().media).toHaveLength(1);
     store.close();
   } finally {

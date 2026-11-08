@@ -1,6 +1,6 @@
+import type { MediaRecord } from "../../../../contracts/content";
 import { channels } from "../../../shared/config/channels";
 import { sortMedia } from "../../../shared/lib/media-chronology";
-import { TextWithLinks } from "../../../shared/ui/text-with-links";
 import {
   getMoscowDate,
   useMoscowToday,
@@ -266,25 +266,7 @@ export function PortalPage() {
                 {sortMedia(data?.media ?? [], "desc")
                   .slice(0, 3)
                   .map((m) => (
-                    <article className="media-card" key={m.id}>
-                      {m.kind === "video" ? (
-                        <video
-                          controls
-                          preload="metadata"
-                          src={m.url}
-                          aria-label={m.title}
-                        />
-                      ) : (
-                        <img src={m.url} alt={m.title} loading="lazy" />
-                      )}
-                      <p className="eyebrow">
-                        {m.kind === "video" ? "ВИДЕО" : "МАТЕРИАЛ"}
-                      </p>
-                      <h3>{m.title}</h3>
-                      <p>
-                        <TextWithLinks text={m.description} />
-                      </p>
-                    </article>
+                    <MediaCard key={m.id} item={m} />
                   ))}
               </div>
             )}
@@ -399,27 +381,7 @@ export function PortalPage() {
               </div>
               <div className="media-grid">
                 {archiveMedia.map((m) => (
-                  <article className="media-card" key={m.id}>
-                    {m.kind === "video" ? (
-                      <video
-                        controls
-                        preload="metadata"
-                        src={m.url}
-                        aria-label={m.title}
-                      />
-                    ) : (
-                      <a href={m.url} target="_blank" rel="noreferrer">
-                        <img src={m.url} alt={m.title} loading="lazy" />
-                      </a>
-                    )}
-                    <p className="eyebrow">
-                      {m.kind === "video" ? "ВИДЕО" : "МАТЕРИАЛ"}
-                    </p>
-                    <h3>{m.title}</h3>
-                    <p>
-                      <TextWithLinks text={m.description} />
-                    </p>
-                  </article>
+                  <MediaCard key={m.id} item={m} />
                 ))}
               </div>
               {data && !archiveMedia.length && (
@@ -613,5 +575,54 @@ export function PortalPage() {
         </>
       )}
     </main>
+  );
+}
+
+function MediaCard({ item }: { item: MediaRecord }) {
+  const href = `/media/${item.id}`;
+  const excerpt = item.description.split("\n\n")[1] ?? item.description;
+  return (
+    <article className="media-card">
+      <Link
+        className="media-cover"
+        to={href}
+        aria-label={`Открыть: ${item.title}`}
+      >
+        {item.kind === "video" ? (
+          <video preload="metadata" src={item.url} aria-label={item.title} />
+        ) : (
+          <img src={item.url} alt={item.title} loading="lazy" />
+        )}
+        <span className="media-photo-count">
+          {item.kind === "video"
+            ? "Видео"
+            : `Кадров: ${1 + (item.images?.length ?? 0)}`}
+        </span>
+      </Link>
+      <p className="eyebrow">
+        {item.eventDate ? (
+          <time dateTime={item.eventDate}>
+            {new Date(`${item.eventDate}T12:00:00+03:00`).toLocaleDateString(
+              "ru",
+              {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+                timeZone: "Europe/Moscow",
+              },
+            )}
+          </time>
+        ) : (
+          "МАТЕРИАЛ"
+        )}
+      </p>
+      <h3>
+        <Link to={href}>{item.title}</Link>
+      </h3>
+      <p className="media-excerpt">{excerpt}</p>
+      <Link className="text-link" to={href}>
+        Подробнее <ArrowUpRight size={16} />
+      </Link>
+    </article>
   );
 }

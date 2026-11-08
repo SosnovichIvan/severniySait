@@ -4,7 +4,7 @@ import { loadContent } from "../shared/api";
 import { useEffect, useState } from "react";
 import { Link, NavLink, Routes, Route, useLocation } from "react-router-dom";
 import { Sun, Moon, Menu, X, ArrowUpRight, LogIn } from "lucide-react";
-import { PortalPage } from "../pages/portal";
+import { PortalPage, MediaDetail } from "../pages/portal";
 import { AdminPage } from "../pages/admin";
 const links = [
   ["/", "Главная"],
@@ -46,7 +46,7 @@ export function App() {
             aria-label="Основная навигация"
           >
             {links.map(([url, label]) => (
-              <NavLink key={url} to={url} end>
+              <NavLink key={url} to={url} end={url !== "/media"}>
                 {label}
               </NavLink>
             ))}
@@ -84,6 +84,7 @@ export function App() {
       <Routes>
         <Route path="/" element={<PortalPage />} />
         <Route path="/media" element={<PortalPage />} />
+        <Route path="/media/:id" element={<MediaDetail />} />
         <Route path="/divisions" element={<PortalPage />} />
         <Route path="/calendar" element={<PortalPage />} />
         <Route path="/links" element={<PortalPage />} />
@@ -117,7 +118,7 @@ export function App() {
               <ul>
                 {links.map(([url, label]) => (
                   <li key={url}>
-                    <NavLink to={url} end>
+                    <NavLink to={url} end={url !== "/media"}>
                       {label}
                     </NavLink>
                   </li>

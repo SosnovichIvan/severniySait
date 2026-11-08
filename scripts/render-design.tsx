@@ -18,10 +18,9 @@ await writeFile(
   await readFile("public/mikhail-mavashi.jpg"),
 );
 for (const entry of archive) {
-  await writeFile(
-    `design/${entry.file}`,
-    await readFile(`content/media/${entry.file}`),
-  );
+  for (const file of [entry.file, ...(entry.gallery ?? [])]) {
+    await writeFile(`design/${file}`, await readFile(`content/media/${file}`));
+  }
 }
 const editorialMedia = archive.map((entry) => ({
   eventDate: entry.eventDate,
@@ -31,15 +30,18 @@ const editorialMedia = archive.map((entry) => ({
   url: entry.file,
   kind: "image",
   published: true,
+  images: (entry.gallery ?? []).map((file) => ({ id: file, url: file })),
 }));
 const pages = [
   ["home", "/"],
   ["media", "/media"],
+  ...archive.map((entry) => [`story-${entry.key}`, `/media/${entry.key}`]),
   ["divisions", "/divisions"],
   ["calendar", "/calendar"],
   ["links", "/links"],
   ["admin", "/admin"],
 ];
+const galleryScript = `document.querySelectorAll('.photo-gallery').forEach(g=>{let n=0;const stage=g.querySelector('.gallery-stage');const thumbs=[...g.querySelectorAll('.gallery-thumbnails button')];const images=thumbs.length?thumbs.map(t=>t.querySelector('img').src):[stage.querySelector('img').src];const modal=g.querySelector('dialog');function show(i){n=(i+images.length)%images.length;stage.querySelector('img').src=images[n];modal.querySelector('img').src=images[n];g.querySelectorAll('.gallery-controls>span').forEach(c=>c.textContent=String(n+1).padStart(2,'0')+' / '+String(images.length).padStart(2,'0'));thumbs.forEach((t,j)=>t.setAttribute('aria-current',String(j===n)));}g.querySelectorAll('[aria-label="Следующее изображение"]').forEach(b=>b.onclick=()=>show(n+1));g.querySelectorAll('[aria-label="Предыдущее изображение"]').forEach(b=>b.onclick=()=>show(n-1));thumbs.forEach((t,i)=>t.onclick=()=>show(i));stage.onclick=()=>modal.showModal();g.querySelector('.gallery-close').onclick=()=>modal.close();g.onkeydown=e=>{if(e.key==='ArrowRight'){e.preventDefault();show(n+1);}if(e.key==='ArrowLeft'){e.preventDefault();show(n-1);}};});`;
 for (const theme of ["dark", "light"])
   for (const [name, path] of pages) {
     Object.defineProperty(globalThis, "localStorage", {
@@ -75,7 +77,7 @@ for (const theme of ["dark", "light"])
 
     await writeFile(
       `design/${name}-${theme}.html`,
-      `<!doctype html><html lang="ru" data-theme="${theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Северный человек · ${name} · ${theme}</title><style>${css}</style></head><body>${markup}<script>${script}</script></body></html>`,
+      `<!doctype html><html lang="ru" data-theme="${theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Северный человек · ${name} · ${theme}</title><style>${css}</style></head><body>${markup}<script>${script}${galleryScript}</script></body></html>`,
     );
   }
 const entry = await readFile("index.html", "utf8");
@@ -95,4 +97,4 @@ await writeFile(
   "design/opendesign.json",
   JSON.stringify(config, null, 2) + "\n",
 );
-console.log("13 responsive OpenDesign layouts generated.");
+console.log(`${pages.length * 2 + 1} responsive OpenDesign layouts generated.`);

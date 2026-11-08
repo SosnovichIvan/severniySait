@@ -171,12 +171,67 @@ export function createApp(options: AppOptions) {
       return res.status(404).json({ error: "Материал не найден." });
     res.json({ ok: true });
   });
+  app.post(
+    "/api/admin/media/:id/images",
+    upload.single("file"),
+    async (req, res, next) => {
+      try {
+        const item = options.store
+          .list(true)
+          .media.find((m) => m.id === req.params.id);
+        if (!item)
+          return res.status(404).json({ error: "Материал не найден." });
+        if (options.store.images(item.id).length >= 30)
+          return res
+            .status(400)
+            .json({ error: "В галерее может быть не более 30 фотографий." });
+        const type = req.file && identifyMedia(req.file.buffer);
+        if (!req.file || !type || type.kind !== "image")
+          return res.status(400).json({
+            error: "Выберите фотографию PNG, JPEG или WebP (до 30 МБ).",
+          });
+        const name = `${randomUUID()}.${type.extension}`;
+        await mkdir(options.uploadDir, { recursive: true });
+        const path = resolve(options.uploadDir, name);
+        await writeFile(path, req.file.buffer, { flag: "wx" });
+        try {
+          const id = options.store.addImage(item.id, `/uploads/${name}`);
+          res.status(201).json({ id });
+        } catch (error) {
+          await unlink(path);
+          throw error;
+        }
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+  app.delete("/api/admin/media/:id/images/:imageId", async (req, res, next) => {
+    try {
+      const image = options.store.deleteImage(
+        req.params.id,
+        req.params.imageId,
+      );
+      if (!image)
+        return res.status(404).json({ error: "Фотография не найдена." });
+      await unlink(resolve(options.uploadDir, basename(image.url))).catch(
+        () => {},
+      );
+      res.json({ ok: true });
+    } catch (error) {
+      next(error);
+    }
+  });
   app.delete("/api/admin/media/:id", async (req, res, next) => {
     try {
       const row = options.store.deleteMedia(req.params.id);
       if (!row) return res.status(404).json({ error: "Материал не найден." });
-      await unlink(resolve(options.uploadDir, basename(row.url))).catch(
-        () => {},
+      await Promise.all(
+        [row, ...row.images].map((image) =>
+          unlink(resolve(options.uploadDir, basename(image.url))).catch(
+            () => {},
+          ),
+        ),
       );
       res.json({ ok: true });
     } catch (error) {
@@ -186,7 +241,13 @@ export function createApp(options: AppOptions) {
   app.use("/uploads/:name", (req, res, next) => {
     const item = options.store
       .list(true)
-      .media.find((m) => m.url === `/uploads/${req.params.name}`);
+      .media.find(
+        (m) =>
+          m.url === `/uploads/${req.params.name}` ||
+          m.images?.some(
+            (image) => image.url === `/uploads/${req.params.name}`,
+          ),
+      );
     if (!item || (!item.published && !req.session.admin))
       return res.sendStatus(404);
     next();
