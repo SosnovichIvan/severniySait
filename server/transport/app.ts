@@ -12,6 +12,9 @@ import {
   eventInput,
   mediaInput,
   divisionInput,
+  channelInput,
+  publicationInput,
+  publicationKind,
 } from "../../contracts/content.js";
 import { Store } from "../repository/store.js";
 import { SqliteSessions } from "../repository/session-store.js";
@@ -116,6 +119,33 @@ export function createApp(options: AppOptions) {
   app.get("/api/admin/content", (_req, res) =>
     res.json(options.store.list(true)),
   );
+  app.patch("/api/admin/:kind/:id/publication", (req, res) => {
+    const kind = publicationKind.parse(req.params.kind);
+    const { published } = publicationInput.parse(req.body);
+    if (!options.store.setPublication(kind, req.params.id, published))
+      return res.status(404).json({ error: "Запись не найдена." });
+    res.json({ ok: true });
+  });
+  app.post("/api/admin/channels", (req, res) => {
+    res
+      .status(201)
+      .json({ id: options.store.saveChannel(channelInput.parse(req.body)) });
+  });
+  app.put("/api/admin/channels/:id", (req, res) => {
+    const input = channelInput.parse(req.body);
+    if (
+      !options.store
+        .list(true)
+        .channels.some((channel) => channel.id === req.params.id)
+    )
+      return res.status(404).json({ error: "Площадка не найдена." });
+    res.json({ id: options.store.saveChannel(input, req.params.id) });
+  });
+  app.delete("/api/admin/channels/:id", (req, res) => {
+    if (!options.store.deleteChannel(req.params.id))
+      return res.status(404).json({ error: "Площадка не найдена." });
+    res.json({ ok: true });
+  });
   app.put("/api/admin/divisions", (req, res) => {
     options.store.saveDivision(divisionInput.parse(req.body));
     res.json({ ok: true });

@@ -1,3 +1,4 @@
+import defaultChannels from "../../contracts/channels.json" with { type: "json" };
 import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
@@ -6,6 +7,8 @@ import type {
   EventRecord,
   MediaRecord,
   DivisionLink,
+  ChannelRecord,
+  PublicationKind,
 } from "../../contracts/content.js";
 export class Store {
   db: Database.Database;
@@ -47,6 +50,14 @@ export class Store {
           ALTER TABLE division_links ADD COLUMN website TEXT NOT NULL DEFAULT '';
           INSERT INTO migrations VALUES(5);`);
       }
+      if (!this.db.prepare("SELECT 1 FROM migrations WHERE version=6").get()) {
+        this.db
+          .exec(`ALTER TABLE division_links ADD COLUMN published INTEGER NOT NULL DEFAULT 1 CHECK(published IN (0,1));
+          CREATE TABLE channels(id TEXT PRIMARY KEY,name TEXT NOT NULL,note TEXT NOT NULL,short TEXT NOT NULL,url TEXT NOT NULL,published INTEGER NOT NULL CHECK(published IN (0,1)));
+          INSERT INTO migrations VALUES(6);`);
+        for (const channel of defaultChannels)
+          this.saveChannel(channel, channel.id);
+      }
     })();
   }
   list(admin = false) {
@@ -60,12 +71,24 @@ export class Store {
         `SELECT * FROM media ${admin ? "" : "WHERE published=1"} ORDER BY rowid DESC LIMIT 500`,
       )
       .all() as (Omit<MediaRecord, "published"> & { published: number })[];
+    const channels = this.db
+      .prepare(
+        `SELECT * FROM channels ${admin ? "" : "WHERE published=1"} ORDER BY rowid`,
+      )
+      .all() as (Omit<ChannelRecord, "published"> & { published: number })[];
+    const divisions = this.db
+      .prepare(
+        `SELECT name,url${admin ? ",published,coordinator,contact,vk,max,telegram,email,website" : ""} FROM division_links ${admin ? "" : "WHERE published=1"} ORDER BY name`,
+      )
+      .all() as (Omit<DivisionLink, "published"> & { published?: number })[];
     return {
-      divisions: this.db
-        .prepare(
-          `SELECT name,url${admin ? ",coordinator,contact,vk,max,telegram,email,website" : ""} FROM division_links ORDER BY name`,
-        )
-        .all() as DivisionLink[],
+      channels: channels.map((channel) => ({
+        ...channel,
+        published: !!channel.published,
+      })),
+      divisions: divisions.map(({ published, ...division }) =>
+        admin ? { ...division, published: !!published } : division,
+      ),
       events: events.map((e) => ({ ...e, published: !!e.published })),
       media: media.map((e) => ({
         ...e,
@@ -77,9 +100,9 @@ export class Store {
   saveDivision(input: DivisionLink) {
     this.db
       .prepare(
-        `INSERT INTO division_links(name,url,coordinator,contact,vk,max,telegram,email,website)
-         VALUES(@name,@url,coalesce(@coordinator,''),coalesce(@contact,''),coalesce(@vk,''),coalesce(@max,''),coalesce(@telegram,''),coalesce(@email,''),coalesce(@website,''))
-         ON CONFLICT(name) DO UPDATE SET url=excluded.url,
+        `INSERT INTO division_links(name,url,published,coordinator,contact,vk,max,telegram,email,website)
+         VALUES(@name,@url,coalesce(@published,1),coalesce(@coordinator,''),coalesce(@contact,''),coalesce(@vk,''),coalesce(@max,''),coalesce(@telegram,''),coalesce(@email,''),coalesce(@website,''))
+         ON CONFLICT(name) DO UPDATE SET url=excluded.url,published=coalesce(@published,division_links.published),
          coordinator=coalesce(@coordinator,division_links.coordinator),contact=coalesce(@contact,division_links.contact),
          vk=coalesce(@vk,division_links.vk),max=coalesce(@max,division_links.max),telegram=coalesce(@telegram,division_links.telegram),
          email=coalesce(@email,division_links.email),website=coalesce(@website,division_links.website)`,
@@ -93,7 +116,32 @@ export class Store {
         email: null,
         website: null,
         ...input,
+        published: input.published === undefined ? null : +input.published,
       });
+  }
+  setPublication(kind: PublicationKind, id: string, published: boolean) {
+    const table = {
+      events: "events",
+      media: "media",
+      divisions: "division_links",
+      channels: "channels",
+    }[kind];
+    const key = kind === "divisions" ? "name" : "id";
+    return this.db
+      .prepare(`UPDATE ${table} SET published=? WHERE ${key}=?`)
+      .run(+published, id).changes;
+  }
+  saveChannel(input: Omit<ChannelRecord, "id">, id: string = randomUUID()) {
+    this.db
+      .prepare(
+        `INSERT INTO channels(id,name,note,short,url,published) VALUES(@id,@name,@note,@short,@url,@published)
+      ON CONFLICT(id) DO UPDATE SET name=excluded.name,note=excluded.note,short=excluded.short,url=excluded.url,published=excluded.published`,
+      )
+      .run({ ...input, id, published: +input.published });
+    return id;
+  }
+  deleteChannel(id: string) {
+    return this.db.prepare("DELETE FROM channels WHERE id=?").run(id).changes;
   }
   saveEvent(input: Omit<EventRecord, "id">, id: string = randomUUID()) {
     this.db

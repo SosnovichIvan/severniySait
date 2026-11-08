@@ -16,6 +16,7 @@ export const divisionInput = z.object({
       "Неизвестное подразделение",
     ),
   url: divisionUrl,
+  published: z.boolean().optional(),
   coordinator: z.string().trim().max(120).optional(),
   contact: z.string().trim().max(300).optional(),
   vk: divisionUrl.optional(),
@@ -30,6 +31,23 @@ export const divisionInput = z.object({
   website: divisionUrl.optional(),
 });
 export type DivisionLink = z.infer<typeof divisionInput>;
+export const channelInput = z.object({
+  name: z.string().trim().min(1).max(100),
+  note: z.string().trim().max(300),
+  short: z.string().trim().min(1).max(4),
+  url: divisionUrl.refine((url) => url !== "", "Укажите ссылку"),
+  published: z.boolean(),
+});
+export const channelSchema = channelInput.extend({ id: z.string() });
+export type ChannelRecord = z.infer<typeof channelSchema>;
+export const publicationInput = z.object({ published: z.boolean() });
+export const publicationKind = z.enum([
+  "events",
+  "media",
+  "divisions",
+  "channels",
+]);
+export type PublicationKind = z.infer<typeof publicationKind>;
 export const eventInput = z.object({
   title: z.string().trim().min(3).max(160),
   description: z.string().trim().max(4000),
@@ -51,6 +69,7 @@ export const mediaSchema = mediaInput.extend({
   images: z.array(z.object({ id: z.string(), url: z.string() })).optional(),
 });
 export const contentSchema = z.object({
+  channels: z.array(channelSchema).optional(),
   divisions: z.array(divisionInput).optional(),
   events: z.array(eventSchema),
   media: z.array(mediaSchema),

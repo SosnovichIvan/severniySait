@@ -1,6 +1,5 @@
 import { Select } from "../../../shared/ui/select";
 import type { MediaRecord } from "../../../../contracts/content";
-import { channels } from "../../../shared/config/channels";
 import { sortMedia } from "../../../shared/lib/media-chronology";
 import {
   getMoscowDate,
@@ -541,7 +540,7 @@ export function PortalPage() {
           )}
           {path === "/links" && (
             <div className="channel-grid">
-              {channels.map((c) => (
+              {(data?.channels ?? []).map((c) => (
                 <a
                   className="channel-card"
                   key={c.name}

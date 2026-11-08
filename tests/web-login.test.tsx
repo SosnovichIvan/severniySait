@@ -126,7 +126,9 @@ it("prevents duplicate submissions, preserves a rejected password, and enters th
     expect(screen.getByTestId("path")).toHaveTextContent("/admin"),
   );
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "Редакция." })).toBeVisible();
+  expect(
+    screen.getByRole("heading", { name: "Управление материалами сайта" }),
+  ).toBeVisible();
   expect(client.getQueryData(["session"])).toEqual({
     admin: true,
     csrf: "rotated",

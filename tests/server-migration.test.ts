@@ -31,6 +31,7 @@ it("upgrades a populated v1 archive without losing data and reopens safely", asy
       { version: 3 },
       { version: 4 },
       { version: 5 },
+      { version: 6 },
     ]);
     expect(store.list().media).toHaveLength(1);
     store.close();
@@ -53,6 +54,7 @@ it("upgrades v4 division links while retaining existing destinations", async () 
       {
         name: "Москва",
         url: "https://example.org/moscow",
+        published: true,
         coordinator: "",
         contact: "",
         vk: "",

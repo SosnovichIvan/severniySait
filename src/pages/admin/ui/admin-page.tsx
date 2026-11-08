@@ -1,11 +1,13 @@
+import { ChannelEditor } from "./channel-editor";
+import { Link, useNavigate } from "react-router-dom";
 import { DivisionEditor } from "./division-editor";
 import { LoginDialog } from "../../../features/editor-login";
-import { useNavigate } from "react-router-dom";
 import { ConfirmDialog } from "../../../shared/ui/confirm-dialog";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   CalendarDays,
+  Link2,
   Image,
   MapPin,
   LogOut,
@@ -15,7 +17,11 @@ import {
   Trash2,
 } from "lucide-react";
 import { loadContent, loadSession, send, request } from "../../../shared/api";
-import type { EventRecord, MediaRecord } from "../../../../contracts/content";
+import type {
+  PublicationKind,
+  EventRecord,
+  MediaRecord,
+} from "../../../../contracts/content";
 type Draft = {
   id?: string;
   title: string;
@@ -31,7 +37,7 @@ const blank: Draft = {
   startsAt: "",
   published: false,
 };
-export function AdminPage() {
+export function AdminPage({ themeToggle }: { themeToggle?: ReactNode }) {
   const client = useQueryClient();
   const navigate = useNavigate();
   const session = useQuery({
@@ -45,7 +51,9 @@ export function AdminPage() {
     enabled: !!session.data?.admin,
     retry: false,
   });
-  const [tab, setTab] = useState<"events" | "media" | "divisions">("events");
+  const [tab, setTab] = useState<"events" | "media" | "divisions" | "channels">(
+    "events",
+  );
   const [draft, setDraft] = useState<Draft>(blank);
   const [mediaEdit, setMediaEdit] = useState<MediaRecord | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -67,6 +75,25 @@ export function AdminPage() {
       await send("/api/logout", "POST", {}, csrf);
       client.removeQueries({ queryKey: ["admin-content"] });
       await client.invalidateQueries({ queryKey: ["session"] });
+    });
+  }
+  function publish(kind: PublicationKind, id: string, published: boolean) {
+    return mutation.mutateAsync(async () => {
+      await send(
+        `/api/admin/${kind}/${encodeURIComponent(id)}/publication`,
+        "PATCH",
+        { published },
+        csrf,
+      );
+      if (kind === "events" && draft.id === id)
+        setDraft((current) => ({ ...current, published }));
+      if (kind === "media" && mediaEdit?.id === id)
+        setMediaEdit((current) => current && { ...current, published });
+      setFeedback(
+        published
+          ? "Запись опубликована."
+          : "Запись снята с публикации и сохранена как черновик.",
+      );
     });
   }
   function saveEvent(e: FormEvent) {
@@ -184,20 +211,21 @@ export function AdminPage() {
     );
   return (
     <main id="main" className="container admin">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">ПАНЕЛЬ УПРАВЛЕНИЯ</p>
-          <h1>
-            Редакция<span className="heading-dot">.</span>
-          </h1>
+      <h1 className="sr-only">Управление материалами сайта</h1>
+      <div className="admin-toolbar">
+        <Link className="text-link" to="/">
+          ← Открыть сайт
+        </Link>
+        <div className="admin-toolbar-actions">
+          {themeToggle}
+          <button
+            className="button"
+            disabled={mutation.isPending}
+            onClick={() => void logout()}
+          >
+            <LogOut size={16} /> Выйти
+          </button>
         </div>
-        <button
-          className="button"
-          disabled={mutation.isPending}
-          onClick={() => void logout()}
-        >
-          <LogOut size={16} /> Выйти
-        </button>
       </div>
       <div className="tabs">
         <button
@@ -233,9 +261,52 @@ export function AdminPage() {
         >
           <MapPin size={16} /> Подразделения
         </button>
+        <button
+          aria-pressed={tab === "channels"}
+          className={tab === "channels" ? "active" : ""}
+          onClick={() => {
+            setTab("channels");
+            mutation.reset();
+            setFeedback("");
+          }}
+        >
+          <Link2 size={16} /> Площадки и каналы
+        </button>
       </div>
       {notice}
-      {tab === "divisions" ? (
+      {tab === "channels" ? (
+        <>
+          {content.isPending && <p role="status">Загружаем площадки…</p>}
+          {content.error && (
+            <p role="alert">
+              Не удалось загрузить площадки.{" "}
+              <button onClick={() => void content.refetch()}>Повторить</button>
+            </p>
+          )}
+          {content.data && (
+            <ChannelEditor
+              key={content.data.channels?.length ?? 0}
+              channels={content.data.channels ?? []}
+              pending={mutation.isPending}
+              onSave={(channel) =>
+                mutation.mutateAsync(async () => {
+                  await send(
+                    `/api/admin/channels${channel.id ? `/${channel.id}` : ""}`,
+                    channel.id ? "PUT" : "POST",
+                    channel,
+                    csrf,
+                  );
+                  setFeedback("Площадка сохранена.");
+                })
+              }
+              onPublication={(channel) =>
+                publish("channels", channel.id, !channel.published)
+              }
+              onDelete={(id) => setDeleting({ type: "channels", id })}
+            />
+          )}
+        </>
+      ) : tab === "divisions" ? (
         <>
           {content.isPending && <p role="status">Загружаем подразделения…</p>}
           {content.error && (
@@ -306,6 +377,18 @@ export function AdminPage() {
                     }}
                   >
                     <PenLine size={16} /> Редактировать
+                  </button>
+                  <button
+                    disabled={mutation.isPending}
+                    onClick={() =>
+                      void publish(
+                        "city" in item ? "events" : "media",
+                        item.id,
+                        !item.published,
+                      ).catch(() => {})
+                    }
+                  >
+                    {item.published ? "Снять с публикации" : "Опубликовать"}
                   </button>
                   <button
                     aria-label={`Удалить ${item.title}`}
@@ -463,6 +546,7 @@ export function AdminPage() {
                   <input
                     type="checkbox"
                     name="published"
+                    key={String(mediaEdit?.published)}
                     defaultChecked={mediaEdit?.published ?? false}
                   />{" "}
                   Опубликовать на сайте

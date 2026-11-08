@@ -4,6 +4,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { hash } from "bcryptjs";
+import defaultChannels from "../contracts/channels.json";
 import { Store } from "../server/repository/store";
 import { createApp } from "../server/transport/app";
 import { identifyMedia } from "../server/domain/media-file";
@@ -64,6 +65,7 @@ describe("API and storage", () => {
       events: [],
       media: [],
       divisions: [],
+      channels: defaultChannels,
     });
     expect((await agent.get("/api/session")).body.admin).toBe(false);
     expect(
@@ -283,7 +285,7 @@ describe("API and storage", () => {
     expect(second.db.pragma("integrity_check", { simple: true })).toBe("ok");
     expect(second.db.pragma("foreign_key_check")).toEqual([]);
     expect(second.db.pragma("foreign_keys", { simple: true })).toBe(1);
-    expect(second.db.prepare("SELECT * FROM migrations").all()).toHaveLength(5);
+    expect(second.db.prepare("SELECT * FROM migrations").all()).toHaveLength(6);
     second.close();
     const sessions = new SqliteSessions(store);
     sessions.get("missing", (_e, v) => expect(v).toBeNull());
@@ -535,6 +537,7 @@ it("validates optional division contacts, preserves omissions and clears explici
   expect((await agent.get("/api/admin/content")).body.divisions[0]).toEqual({
     name: "Москва",
     url: "",
+    published: true,
     ...fields,
   });
   expect((await agent.get("/api/content")).body.divisions[0]).toEqual({
@@ -555,4 +558,136 @@ it("validates optional division contacts, preserves omissions and clears explici
   );
   store.saveDivision({ name: "Москва", url: "", ...cleared });
   expect(store.list(true).divisions[0]).toMatchObject(cleared);
+});
+
+it("publishes and unpublishes every entity without deleting data or exposing drafts", async () => {
+  const publication = (
+    kind: string,
+    id: string,
+    published: unknown,
+    token = csrf,
+  ) =>
+    agent
+      .patch(`/api/admin/${kind}/${encodeURIComponent(id)}/publication`)
+      .set("x-csrf-token", token)
+      .send({ published });
+  expect((await publication("channels", "channel-1", false)).status).toBe(401);
+  await login();
+  expect((await publication("events", "missing", true, "bad")).status).toBe(
+    403,
+  );
+  expect((await publication("sessions", "missing", true)).status).toBe(400);
+  expect((await publication("events", "missing", "true")).status).toBe(400);
+  expect((await publication("events", "missing", true)).status).toBe(404);
+  const eventId = store.saveEvent(event);
+  const mediaId = (await upload(false)).body.id;
+  store.saveDivision({
+    name: "Москва",
+    url: "https://example.org/moscow",
+    published: false,
+    coordinator: "Иван",
+  });
+  const channelId = store.saveChannel({
+    name: "Новый канал",
+    note: "Описание",
+    short: "НК",
+    url: "https://example.org/channel",
+    published: false,
+  });
+  const entries = [
+    ["events", eventId],
+    ["media", mediaId],
+    ["divisions", "Москва"],
+    ["channels", channelId],
+  ] as const;
+  for (const [kind, id] of entries) {
+    const isMatch = (item: { id?: string; name?: string }) =>
+      (kind === "divisions" ? item.name : item.id) === id;
+    expect(store.list()[kind].some(isMatch)).toBe(false);
+    for (const published of [true, true, false, false, true]) {
+      expect((await publication(kind, id, published)).status).toBe(200);
+      expect(store.list()[kind].some(isMatch)).toBe(published);
+      expect(store.list(true)[kind].find(isMatch)).toMatchObject({ published });
+    }
+    await publication(kind, id, false);
+  }
+  const media = store.list(true).media[0];
+  expect((await agent.get(media.url)).status).toBe(200);
+  await agent.post("/api/logout").set("x-csrf-token", csrf);
+  expect((await agent.get(media.url)).status).toBe(404);
+  store.close();
+  store = new Store(join(dir, "test.sqlite"));
+  expect(store.list(true).events[0].description).toBe(event.description);
+  expect(store.list(true).divisions[0]).toMatchObject({
+    coordinator: "Иван",
+    published: false,
+  });
+  expect(store.list().divisions).toEqual([]);
+});
+
+it("manages channels with validation, authentication, persistence and one-time seeding", async () => {
+  const body = {
+    name: "Площадка",
+    note: "Описание",
+    short: "ПЛ",
+    url: "https://example.org",
+    published: false,
+  };
+  const create = (input: object) =>
+    agent.post("/api/admin/channels").set("x-csrf-token", csrf).send(input);
+  expect((await create(body)).status).toBe(401);
+  await login();
+  for (const invalid of [
+    { url: "" },
+    { url: "javascript:alert(1)" },
+    { url: "https://" },
+    { name: "" },
+    { short: "12345" },
+    { published: "true" },
+  ]) {
+    expect((await create({ ...body, ...invalid })).status).toBe(400);
+  }
+  const created = await create(body);
+  expect(created.status).toBe(201);
+  const id = created.body.id;
+  expect(store.list().channels.some((c) => c.id === id)).toBe(false);
+  expect(
+    (
+      await agent
+        .put(`/api/admin/channels/${id}`)
+        .set("x-csrf-token", csrf)
+        .send({ ...body, name: "Новое имя", published: true })
+    ).status,
+  ).toBe(200);
+  expect(store.list().channels.find((c) => c.id === id)?.name).toBe(
+    "Новое имя",
+  );
+  expect(
+    (
+      await agent
+        .put("/api/admin/channels/missing")
+        .set("x-csrf-token", csrf)
+        .send(body)
+    ).status,
+  ).toBe(404);
+  expect(
+    (await agent.delete(`/api/admin/channels/${id}`).set("x-csrf-token", csrf))
+      .status,
+  ).toBe(200);
+  expect(
+    (await agent.delete(`/api/admin/channels/${id}`).set("x-csrf-token", csrf))
+      .status,
+  ).toBe(404);
+  expect(
+    (
+      await agent
+        .delete("/api/admin/channels/channel-1")
+        .set("x-csrf-token", csrf)
+    ).status,
+  ).toBe(200);
+  store.close();
+  store = new Store(join(dir, "test.sqlite"));
+  expect(store.list(true).channels).toHaveLength(3);
+  expect(store.list().channels.some((c) => c.id === "channel-1")).toBe(false);
+  expect(store.db.pragma("integrity_check", { simple: true })).toBe("ok");
 });

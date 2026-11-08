@@ -34,7 +34,8 @@ export function DivisionEditor({ links, pending, onSave }: Props) {
         </label>
         <div className="division-editor-list">
           {filtered.map(({ name }) => {
-            const url = links.find((link) => link.name === name)?.url ?? "";
+            const saved = links.find((link) => link.name === name);
+            const url = saved?.url ?? "";
             return (
               <button
                 type="button"
@@ -48,12 +49,18 @@ export function DivisionEditor({ links, pending, onSave }: Props) {
                     ...links.find((link) => link.name === name),
                     name,
                     url,
+                    published:
+                      links.find((link) => link.name === name)?.published ??
+                      false,
                   })
                 }
               >
                 <MapPin size={16} />
                 <span>{name}</span>
-                <small>{url ? "Ссылка добавлена" : "Нет ссылки"}</small>
+                <small>
+                  {saved?.published ? "Опубликовано" : "Черновик"} ·{" "}
+                  {url ? "Ссылка добавлена" : "Нет ссылки"}
+                </small>
               </button>
             );
           })}
@@ -176,6 +183,21 @@ export function DivisionEditor({ links, pending, onSave }: Props) {
                 />
               </label>
             </fieldset>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={draft.published ?? false}
+                disabled={pending}
+                onChange={(event) =>
+                  setDraft({ ...draft, published: event.target.checked })
+                }
+              />{" "}
+              Опубликовать на сайте
+            </label>
+            <p>
+              Сохраните без публикации, чтобы оставить черновик. Снятие с
+              публикации отключит ссылку, сохранив данные подразделения.
+            </p>
             <button className="button primary" disabled={pending}>
               {pending ? "Сохраняем…" : "Сохранить подразделение"}
             </button>

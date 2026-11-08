@@ -9,6 +9,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import channels from "../contracts/channels.json";
 import { App } from "../src/app/shell";
 import { PortalPage } from "../src/pages/portal";
 import { AdminPage } from "../src/pages/admin";
@@ -36,7 +37,7 @@ const photo = {
   published: true,
 };
 const video = { ...photo, id: "video", title: "Видео встречи", kind: "video" };
-const content = { events: [event], media: [photo, video] };
+const content = { events: [event], media: [photo, video], channels };
 function mockApi(handler?: (url: string, options?: RequestInit) => unknown) {
   vi.stubGlobal(
     "fetch",
@@ -261,7 +262,9 @@ describe("admin UI", () => {
     fail = false;
     await user.click(screen.getByRole("button", { name: "Войти" }));
     expect(
-      await screen.findByRole("heading", { name: "Редакция." }),
+      await screen.findByRole("heading", {
+        name: "Управление материалами сайта",
+      }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Выйти" }));
     expect(
@@ -551,6 +554,7 @@ it("edits division links, searches cities and retains input on failure", async (
   );
   const input = screen.getByRole("textbox", { name: "Ссылка для перехода" });
   expect(input).toHaveValue("https://example.org/moscow");
+  await user.click(screen.getByLabelText("Опубликовать на сайте"));
   const contacts = {
     Координатор: "Иван Иванов",
     "Контакт для связи": "+7 900 000-00-00",
@@ -590,6 +594,7 @@ it("edits division links, searches cities and retains input on failure", async (
     await user.clear(field);
   }
   await user.clear(input);
+  await user.click(screen.getByLabelText("Опубликовать на сайте"));
   await user.click(
     screen.getByRole("button", { name: "Сохранить подразделение" }),
   );
@@ -602,4 +607,105 @@ it("edits division links, searches cities and retains input on failure", async (
     "нетгорода",
   );
   expect(screen.getByText("Город не найден.")).toBeInTheDocument();
+});
+
+it("keeps admin separate from public chrome and switches event and media publication", async () => {
+  const data = { ...content, events: [{ ...event }], media: [{ ...photo }] };
+  mockApi((url, options) => {
+    if (options?.method === "PATCH") {
+      const published = JSON.parse(String(options.body)).published;
+      const item = url.includes("/events/") ? data.events[0] : data.media[0];
+      item.published = published;
+      return { ok: true };
+    }
+    if (url.includes("content")) return data;
+  });
+  const user = userEvent.setup();
+  mount(<App />, "/admin", data, true);
+  expect(screen.queryByRole("banner")).not.toBeInTheDocument();
+  expect(screen.queryByRole("contentinfo")).not.toBeInTheDocument();
+  expect(screen.getAllByRole("button", { name: "Выйти" })).toHaveLength(1);
+  expect(screen.queryByText("ПАНЕЛЬ УПРАВЛЕНИЯ")).not.toBeInTheDocument();
+  await user.click(
+    screen.getByRole("button", { name: `Редактировать ${event.title}` }),
+  );
+  await user.click(screen.getByRole("button", { name: "Снять с публикации" }));
+  expect(await screen.findByText("Черновик")).toBeInTheDocument();
+  expect(screen.getByLabelText("Опубликовать на сайте")).not.toBeChecked();
+  await user.click(screen.getByRole("button", { name: "Опубликовать" }));
+  expect(await screen.findByText("Опубликовано")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Медиа" }));
+  await user.click(
+    screen.getByRole("button", { name: `Редактировать ${photo.title}` }),
+  );
+  await user.click(screen.getByRole("button", { name: "Снять с публикации" }));
+  expect(await screen.findByText("Черновик")).toBeInTheDocument();
+  expect(screen.getByLabelText("Опубликовать на сайте")).not.toBeChecked();
+  await user.click(screen.getByRole("button", { name: "Опубликовать" }));
+  expect(await screen.findByText("Опубликовано")).toBeInTheDocument();
+});
+
+it("edits channels, retains a failed draft, updates publication and removes with confirmation", async () => {
+  let fail = false;
+  let failPublish = false;
+  let records = [{ ...channels[0] }];
+  mockApi((url, options) => {
+    if (url.includes("content")) return { ...content, channels: records };
+    if (url.includes("/api/admin/channels")) {
+      if (fail) throw new Error("Нет сети");
+      const body = JSON.parse(String(options?.body ?? "{}"));
+      if (options?.method === "PATCH") {
+        if (failPublish) throw new Error("Ошибка публикации");
+        records = records.map((c) => ({ ...c, published: body.published }));
+      } else if (options?.method === "DELETE") records = [];
+      else records = [{ ...body, id: "channel-1" }];
+      return { ok: true };
+    }
+  });
+  const user = userEvent.setup();
+  mount(<AdminPage />, "/admin", { ...content, channels: records }, true);
+  await user.click(screen.getByRole("button", { name: "Площадки и каналы" }));
+  await user.type(screen.getByLabelText("Название площадки"), "Новый канал");
+  await user.type(
+    screen.getByLabelText("Ссылка на площадку"),
+    "https://example.org/new",
+  );
+  await user.type(screen.getByLabelText("Описание площадки"), "Описание");
+  await user.type(screen.getByLabelText("Короткое обозначение"), "НК");
+  expect(screen.getByLabelText("Опубликовать на сайте")).not.toBeChecked();
+  fail = true;
+  await user.click(screen.getByRole("button", { name: "Сохранить площадку" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Нет сети");
+  expect(screen.getByLabelText("Название площадки")).toHaveValue("Новый канал");
+  fail = false;
+  await user.click(screen.getByRole("button", { name: "Сохранить площадку" }));
+  expect(await screen.findByText("Черновик")).toBeInTheDocument();
+  await user.click(
+    screen.getByRole("button", { name: "Редактировать Новый канал" }),
+  );
+  failPublish = true;
+  await user.click(screen.getByRole("button", { name: "Опубликовать" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Ошибка публикации",
+  );
+  expect(screen.getByLabelText("Опубликовать на сайте")).not.toBeChecked();
+  failPublish = false;
+  await user.click(screen.getByRole("button", { name: "Опубликовать" }));
+  expect(await screen.findByText("Опубликовано")).toBeInTheDocument();
+  expect(screen.getByLabelText("Опубликовать на сайте")).toBeChecked();
+  await user.click(screen.getByRole("button", { name: "Снять с публикации" }));
+  expect(await screen.findByText("Черновик")).toBeInTheDocument();
+  await user.click(screen.getByLabelText("Опубликовать на сайте"));
+  await user.click(screen.getByRole("button", { name: "Сохранить площадку" }));
+  await screen.findByText("Площадка сохранена.");
+  await user.click(
+    screen.getByRole("button", { name: "Редактировать Новый канал" }),
+  );
+  await user.click(screen.getByRole("button", { name: "Новая площадка" }));
+  expect(screen.getByLabelText("Название площадки")).toHaveValue("");
+  await user.click(screen.getByRole("button", { name: "Удалить Новый канал" }));
+  await user.click(screen.getByRole("button", { name: /^Удалить$/ }));
+  expect(
+    await screen.findByText("Добавьте первую площадку."),
+  ).toBeInTheDocument();
 });
