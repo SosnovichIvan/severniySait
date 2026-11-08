@@ -101,19 +101,19 @@ export function PortalPage() {
                 <h1 aria-label="Северный человек">
                   Северный <span>человек</span>
                 </h1>
-                <img
-                  className="brand-logo"
-                  src="/logo.png"
-                  width="240"
-                  height="240"
-                  alt="Логотип объединения «Северный человек»"
-                />
+                <p className="hero-statement">
+                  Наша сила — в единстве. Сохраняем русские традиции, развиваем
+                  спорт, воспитываем молодёжь, укрепляем устои общества и
+                  поддерживаем граждан.
+                </p>
               </div>
-              <p className="hero-statement">
-                Наша сила — в единстве. Сохраняем русские традиции, развиваем
-                спорт, воспитываем молодёжь, укрепляем устои общества и
-                поддерживаем граждан.
-              </p>
+              <img
+                className="brand-logo"
+                src="/logo.png"
+                width="320"
+                height="320"
+                alt="Логотип объединения «Северный человек»"
+              />
             </div>
             <section
               className="hero-about"

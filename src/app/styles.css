@@ -208,13 +208,11 @@ textarea:focus-visible {
   background: var(--surface);
 }
 .hero-copy {
-  padding-bottom: 36px;
-}
-.hero-heading {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(160px, 20vw, 240px);
-  align-items: center;
-  gap: 40px;
+  grid-template-columns: minmax(0, 1fr) clamp(200px, 25vw, 320px);
+  align-items: start;
+  gap: 32px;
+  padding-bottom: 36px;
 }
 .hero h1 {
   font-family: var(--serif);
@@ -237,9 +235,7 @@ textarea:focus-visible {
   line-height: 1.55;
   color: var(--muted);
   max-width: 680px;
-  margin-top: 32px;
-  padding-left: 24px;
-  border-left: 2px solid var(--accent);
+  margin: 18px 0 0;
   text-wrap: pretty;
 }
 .button {
@@ -1014,8 +1010,12 @@ input[type="file"]::file-selector-button {
     grid-template-columns: 1fr;
     gap: 24px;
   }
+  .hero-copy {
+    grid-template-columns: minmax(0, 1fr) clamp(160px, 24vw, 216px);
+    gap: 24px;
+  }
   .hero h1 {
-    font-size: 62px;
+    font-size: clamp(44px, 7vw, 62px);
     letter-spacing: -3px;
   }
   .hero-statement {
@@ -1060,21 +1060,28 @@ input[type="file"]::file-selector-button {
     border-radius: 26px;
   }
   .hero-copy {
+    grid-template-columns: minmax(0, 1fr) clamp(70px, 25vw, 140px);
+    grid-template-areas: "title logo" "statement statement";
+    gap: 16px 12px;
     padding-bottom: 28px;
+    align-items: center;
   }
   .hero-heading {
-    grid-template-columns: minmax(0, 1fr) clamp(64px, 22vw, 120px);
-    gap: 16px;
+    display: contents;
+  }
+  .hero-copy > .brand-logo {
+    grid-area: logo;
   }
   .hero h1 {
+    grid-area: title;
     font-size: clamp(30px, 9.2vw, 54px);
     letter-spacing: -1.5px;
   }
   .hero-statement {
     font-size: 22px;
-    max-width: 340px;
-    padding-left: 20px;
-    margin-top: 26px;
+    grid-area: statement;
+    max-width: none;
+    margin: 0;
   }
   .section {
     padding: 40px 0;
