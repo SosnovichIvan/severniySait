@@ -3,10 +3,19 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { readFile, readdir, writeFile, mkdir } from "node:fs/promises";
+import { readFile, readdir, writeFile, mkdir, unlink } from "node:fs/promises";
 import { App } from "../src/app/shell";
 import channels from "../contracts/channels.json";
 import archive from "../content/archive.json";
+import regionalNames from "../contracts/regional-divisions.json";
+const divisions = regionalNames.map((name) => ({
+  id: `design-${name}`,
+  name,
+  url: "",
+  published: true,
+  region: name === "Москва" ? "Москва" : "Московская область",
+  type: "city",
+}));
 const files = await readdir(".preview/assets");
 const css = await readFile(
   `.preview/assets/${files.find((f) => f.endsWith(".css"))}`,
@@ -14,6 +23,20 @@ const css = await readFile(
 );
 const logo = await readFile("public/logo.png");
 await mkdir("design", { recursive: true });
+const regionalStories = new Set(
+  archive.flatMap((entry) => [
+    `story-${entry.key}-dark.html`,
+    `story-${entry.key}-light.html`,
+  ]),
+);
+for (const name of await readdir("design")) {
+  if (
+    name.startsWith("story-") &&
+    name.endsWith(".html") &&
+    !regionalStories.has(name)
+  )
+    await unlink(`design/${name}`);
+}
 await writeFile("design/logo.png", logo);
 await writeFile(
   "design/mikhail-mavashi.jpg",
@@ -43,6 +66,7 @@ const pages = [
   ["calendar", "/calendar"],
   ["links", "/links"],
   ["admin", "/admin"],
+  ["admin-divisions", "/admin?section=divisions"],
   ["admin-updates", "/admin?section=updates"],
 ];
 const galleryScript = `document.querySelectorAll('.photo-gallery').forEach(g=>{let n=0;const stage=g.querySelector('.gallery-stage');const thumbs=[...g.querySelectorAll('.gallery-thumbnails button')];const images=thumbs.length?thumbs.map(t=>t.querySelector('img').src):[stage.querySelector('img').src];const modal=g.querySelector('dialog');function show(i){n=(i+images.length)%images.length;stage.querySelector('img').src=images[n];modal.querySelector('img').src=images[n];g.querySelectorAll('.gallery-controls>span').forEach(c=>c.textContent=String(n+1).padStart(2,'0')+' / '+String(images.length).padStart(2,'0'));thumbs.forEach((t,j)=>t.setAttribute('aria-current',String(j===n)));}g.querySelectorAll('[aria-label="Следующее изображение"]').forEach(b=>b.onclick=()=>show(n+1));g.querySelectorAll('[aria-label="Предыдущее изображение"]').forEach(b=>b.onclick=()=>show(n-1));thumbs.forEach((t,i)=>t.onclick=()=>show(i));stage.onclick=()=>modal.showModal();g.querySelector('.gallery-close').onclick=()=>modal.close();g.onkeydown=e=>{if(e.key==='ArrowRight'){e.preventDefault();show(n+1);}if(e.key==='ArrowLeft'){e.preventDefault();show(n-1);}};});`;
@@ -61,12 +85,18 @@ for (const theme of ["dark", "light"])
       media: editorialMedia,
       events: [],
       channels,
+      divisions,
     });
     client.setQueryData(["session"], {
       admin: path.startsWith("/admin"),
       csrf: "design-only",
     });
-    client.setQueryData(["admin-content"], { events: [], media: [] });
+    client.setQueryData(["admin-content"], {
+      events: [],
+      media: [],
+      divisions,
+      channels,
+    });
     client.setQueryData(["content-updates"], { jobs: [], drafts: [] });
     const loginClient = new QueryClient({
       defaultOptions: { queries: { staleTime: Infinity } },

@@ -15,6 +15,7 @@ const event = {
 it("publishes only selected unchanged drafts atomically, once, at the due time; persists, cancels and rejects conflicts", () => {
   const store = new Store(":memory:");
   try {
+    store.db.exec("DELETE FROM division_links");
     const eventId = store.saveEvent(event);
     const mediaId = store.addMedia({
       title: "Медиа",

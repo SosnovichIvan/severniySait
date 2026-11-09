@@ -351,11 +351,33 @@ export function AdminPage({ themeToggle }: { themeToggle?: ReactNode }) {
           )}
           {content.data && (
             <DivisionEditor
+              onArchive={(id, archived) =>
+                mutation.mutateAsync(async () => {
+                  await send(
+                    `/api/admin/divisions/${encodeURIComponent(id)}${archived ? "" : "/archive"}`,
+                    archived ? "DELETE" : "PATCH",
+                    {},
+                    csrf,
+                  );
+                  setFeedback(
+                    archived
+                      ? "Подразделение убрано в архив."
+                      : "Подразделение восстановлено как черновик.",
+                  );
+                })
+              }
               links={content.data.divisions ?? []}
               pending={mutation.isPending}
               onSave={(link) =>
-                mutation.mutate(async () => {
-                  await send("/api/admin/divisions", "PUT", link, csrf);
+                mutation.mutateAsync(async () => {
+                  await send(
+                    link.id
+                      ? `/api/admin/divisions/${encodeURIComponent(link.id)}`
+                      : "/api/admin/divisions",
+                    link.id ? "PUT" : "POST",
+                    link,
+                    csrf,
+                  );
                   setFeedback("Данные подразделения сохранены.");
                 })
               }

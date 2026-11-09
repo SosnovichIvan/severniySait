@@ -37,7 +37,12 @@ const photo = {
   published: true,
 };
 const video = { ...photo, id: "video", title: "Видео встречи", kind: "video" };
-const content = { events: [event], media: [photo, video], channels };
+const content = {
+  events: [event],
+  media: [photo, video],
+  channels,
+  divisions: [{ id: "moscow", name: "Москва", url: "" }],
+};
 function mockApi(handler?: (url: string, options?: RequestInit) => unknown) {
   vi.stubGlobal(
     "fetch",
@@ -175,7 +180,7 @@ describe("public UI", () => {
       screen.getByRole("textbox", { name: "Найти город" }),
       "Нетгорода",
     );
-    expect(screen.getByText(/Город не найден/)).toBeInTheDocument();
+    expect(screen.getByText(/Подразделение не найдено/)).toBeInTheDocument();
   });
   it("changes calendar months and day filters", async () => {
     mockApi();
@@ -270,7 +275,7 @@ describe("admin UI", () => {
     expect(
       await screen.findByRole("heading", {
         level: 1,
-        name: "Северный человек",
+        name: /Северный человек/,
       }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -550,7 +555,7 @@ it("edits division links, searches cities and retains input on failure", async (
   const user = userEvent.setup();
   mount(<AdminPage />, "/admin", { ...content, divisions: links }, true);
   await user.click(screen.getByRole("button", { name: "Подразделения" }));
-  expect(screen.getByText(/Выберите город слева/)).toBeInTheDocument();
+  expect(screen.getByText(/Выберите подразделение/)).toBeInTheDocument();
   await user.type(
     screen.getByRole("textbox", { name: "Найти подразделение" }),
     "Москва",
@@ -599,7 +604,9 @@ it("edits division links, searches cities and retains input on failure", async (
     expect(field).toHaveValue(value);
     await user.clear(field);
   }
-  await user.clear(input);
+  await user.clear(
+    screen.getByRole("textbox", { name: "Ссылка для перехода" }),
+  );
   await user.click(screen.getByLabelText("Опубликовать на сайте"));
   await user.click(
     screen.getByRole("button", { name: "Сохранить подразделение" }),
@@ -612,7 +619,7 @@ it("edits division links, searches cities and retains input on failure", async (
     screen.getByRole("textbox", { name: "Найти подразделение" }),
     "нетгорода",
   );
-  expect(screen.getByText("Город не найден.")).toBeInTheDocument();
+  expect(screen.getByText("Подразделение не найдено.")).toBeInTheDocument();
 });
 
 it("keeps admin separate from public chrome and switches event and media publication", async () => {

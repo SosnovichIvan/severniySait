@@ -69,6 +69,7 @@ export function App() {
             >
               <span className="header-brand-name" aria-hidden="true">
                 Северный<span>человек</span>
+                <small className="header-region">Москва и область</small>
               </span>
               <span className="header-brand-short" aria-hidden="true">
                 СЧ
@@ -154,8 +155,8 @@ export function App() {
                   Северный человек
                 </Link>
                 <p>
-                  Истории объединения, материалы из регионов и календарь событий
-                  — в одном пространстве.
+                  Истории Москвы и Подмосковья, материалы объединения и
+                  календарь событий — в одном пространстве.
                 </p>
               </div>
               <nav
@@ -191,7 +192,7 @@ export function App() {
             </div>
             <p className="footer-copyright">
               © {new Date().getFullYear()} · Информационный портал «Северный
-              человек»
+              человек» · Москва и Московская область
             </p>
           </div>
         </footer>

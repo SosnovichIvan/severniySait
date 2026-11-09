@@ -15,7 +15,7 @@ import { z } from "zod";
 import {
   eventInput,
   mediaInput,
-  divisionInput,
+  divisionSaveInput,
   channelInput,
   publicationInput,
   publicationKind,
@@ -240,8 +240,39 @@ export function createApp(options: AppOptions) {
       return res.status(404).json({ error: "Площадка не найдена." });
     res.json({ ok: true });
   });
+  app.post("/api/admin/divisions", (req, res) => {
+    const input = divisionSaveInput.parse(req.body);
+    if (options.store.divisionCatalog.find(input.name))
+      return res
+        .status(409)
+        .json({ error: "Подразделение с таким названием уже существует." });
+    res.status(201).json({ id: options.store.saveDivision(input) });
+  });
+  app.put("/api/admin/divisions/:id", (req, res) => {
+    const input = divisionSaveInput.parse(req.body);
+    const previous = options.store.divisionCatalog.find(req.params.id);
+    if (!previous)
+      return res.status(404).json({ error: "Подразделение не найдено." });
+    const conflict = options.store.divisionCatalog.find(input.name);
+    if (conflict && conflict.id !== previous.id)
+      return res
+        .status(409)
+        .json({ error: "Подразделение с таким названием уже существует." });
+    res.json({ id: options.store.saveDivision(input, previous.id) });
+  });
+  app.delete("/api/admin/divisions/:id", (req, res) => {
+    if (!options.store.divisionCatalog.archive(req.params.id, true))
+      return res.status(404).json({ error: "Подразделение не найдено." });
+    res.json({ ok: true });
+  });
+  app.patch("/api/admin/divisions/:id/archive", (req, res) => {
+    if (!options.store.divisionCatalog.archive(req.params.id, false))
+      return res.status(404).json({ error: "Подразделение не найдено." });
+    res.json({ ok: true });
+  });
+  // Compatibility for previous editorial clients; new UI uses stable identities.
   app.put("/api/admin/divisions", (req, res) => {
-    options.store.saveDivision(divisionInput.parse(req.body));
+    options.store.saveDivision(divisionSaveInput.parse(req.body));
     res.json({ ok: true });
   });
   app.post("/api/admin/events", (req, res) => {

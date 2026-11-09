@@ -21,9 +21,11 @@ export class ContentUpdates {
   private row(target: ContentTarget) {
     return this.db
       .prepare(
-        `SELECT * FROM ${tables[target.kind]} WHERE ${target.kind === "divisions" ? "name" : "id"}=?`,
+        `SELECT * FROM ${tables[target.kind]} WHERE ${target.kind === "divisions" ? "(id=? OR name=?) AND archived=0 AND region!='Другой регион'" : "id=?"}`,
       )
-      .get(target.id) as Record<string, unknown> | undefined;
+      .get(
+        ...(target.kind === "divisions" ? [target.id, target.id] : [target.id]),
+      ) as Record<string, unknown> | undefined;
   }
   private fingerprint(target: ContentTarget) {
     const row = this.row(target);
@@ -43,7 +45,7 @@ export class ContentUpdates {
       (
         this.db
           .prepare(
-            `SELECT ${kind === "divisions" ? "name AS id,name" : kind === "channels" ? "id,name" : "id,title AS name"} FROM ${tables[kind]} WHERE published=0 ORDER BY rowid`,
+            `SELECT ${kind === "divisions" ? "id,name" : kind === "channels" ? "id,name" : "id,title AS name"} FROM ${tables[kind]} WHERE published=0 ${kind === "divisions" ? "AND archived=0 AND region!='Другой регион'" : ""} ORDER BY rowid`,
           )
           .all() as { id: string; name: string }[]
       ).map((row) => ({ kind, id: row.id, title: row.name })),
@@ -123,9 +125,13 @@ export class ContentUpdates {
         for (const target of targets)
           this.db
             .prepare(
-              `UPDATE ${tables[target.kind]} SET published=1 WHERE ${target.kind === "divisions" ? "name" : "id"}=?`,
+              `UPDATE ${tables[target.kind]} SET published=1 WHERE ${target.kind === "divisions" ? "(id=? OR name=?) AND archived=0 AND region!='Другой регион'" : "id=?"}`,
             )
-            .run(target.id);
+            .run(
+              ...(target.kind === "divisions"
+                ? [target.id, target.id]
+                : [target.id]),
+            );
         this.db
           .prepare(
             "UPDATE content_updates SET status='succeeded',detail='Выбранные материалы опубликованы. Код сайта не изменён.' WHERE id=?",

@@ -46,10 +46,14 @@ try {
     }
   }
   const code = await new Promise<number>((resolve, reject) => {
-    const runner = spawn("node", ["node_modules/cypress/bin/cypress", "run"], {
-      env,
-      stdio: "inherit",
-    });
+    const runner = spawn(
+      "node",
+      ["node_modules/cypress/bin/cypress", "run", ...process.argv.slice(2)],
+      {
+        env,
+        stdio: "inherit",
+      },
+    );
     runner.on("error", reject);
     runner.on("exit", (c) => resolve(c ?? 1));
   });
