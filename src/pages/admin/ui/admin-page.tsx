@@ -1,3 +1,6 @@
+import { CollectionTabs } from "../../../shared/ui/collection-tabs";
+import { BrandLockup } from "../../../shared/ui/brand-lockup";
+import { EditorDialog } from "../../../shared/ui/editor-dialog";
 import { UpdateEditor } from "./update-editor";
 import { ChannelEditor } from "./channel-editor";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -61,8 +64,12 @@ export function AdminPage({ themeToggle }: { themeToggle?: ReactNode }) {
     ? requestedTab!
     : "events";
   function setTab(value: string) {
+    setEditorOpen(false);
+    setMediaArchive(false);
     setParams(value === "events" ? {} : { section: value }, { replace: true });
   }
+  const [mediaArchive, setMediaArchive] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
   const [draft, setDraft] = useState<Draft>(blank);
   const [mediaEdit, setMediaEdit] = useState<MediaRecord | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -125,6 +132,7 @@ export function AdminPage({ themeToggle }: { themeToggle?: ReactNode }) {
         csrf,
       );
       setDraft(blank);
+      setEditorOpen(false);
       setFeedback("Событие сохранено.");
     });
   }
@@ -158,10 +166,13 @@ export function AdminPage({ themeToggle }: { themeToggle?: ReactNode }) {
       formElement.reset();
       setMediaEdit(null);
       setFile(null);
+      setEditorOpen(false);
       setFeedback("Материал сохранён.");
     });
   }
   function editEvent(event: EventRecord) {
+    setEditorOpen(true);
+    mutation.reset();
     const date = new Date(event.startsAt);
     setDraft({
       ...event,
@@ -230,12 +241,7 @@ export function AdminPage({ themeToggle }: { themeToggle?: ReactNode }) {
           href="/"
           aria-label="Северный человек — главная"
         >
-          <span className="header-brand-name" aria-hidden="true">
-            Северный<span>человек</span>
-          </span>
-          <span className="header-brand-short" aria-hidden="true">
-            СЧ
-          </span>
+          <BrandLockup />
         </a>
         <div className="admin-toolbar-actions">
           {themeToggle}
@@ -305,7 +311,7 @@ export function AdminPage({ themeToggle }: { themeToggle?: ReactNode }) {
           <RefreshCw size={16} /> Обновление сайта
         </button>
       </div>
-      {notice}
+      {!editorOpen && !["divisions", "channels"].includes(tab) && notice}
       {tab === "updates" ? (
         <UpdateEditor csrf={csrf} />
       ) : tab === "channels" ? (
@@ -319,7 +325,7 @@ export function AdminPage({ themeToggle }: { themeToggle?: ReactNode }) {
           )}
           {content.data && (
             <ChannelEditor
-              key={content.data.channels?.length ?? 0}
+              notice={notice}
               channels={content.data.channels ?? []}
               pending={mutation.isPending}
               onSave={(channel) =>
@@ -351,6 +357,7 @@ export function AdminPage({ themeToggle }: { themeToggle?: ReactNode }) {
           )}
           {content.data && (
             <DivisionEditor
+              notice={notice}
               onArchive={(id, archived) =>
                 mutation.mutateAsync(async () => {
                   await send(
@@ -385,16 +392,49 @@ export function AdminPage({ themeToggle }: { themeToggle?: ReactNode }) {
           )}
         </>
       ) : (
-        <div className="admin-grid">
+        <div className="admin-collection">
           <section className="panel">
             <div className="section-heading">
               <h2>{tab === "events" ? "События" : "Медиатека"}</h2>
-              <span className="eyebrow">
-                {tab === "events"
-                  ? content.data?.events.length
-                  : content.data?.media.length}
-              </span>
+              <button
+                className="button primary add-entity"
+                aria-label={
+                  tab === "events" ? "Добавить событие" : "Добавить материал"
+                }
+                title={
+                  tab === "events" ? "Добавить событие" : "Добавить материал"
+                }
+                disabled={
+                  mutation.isPending || (tab === "media" && mediaArchive)
+                }
+                onClick={() => {
+                  setDraft({ ...blank });
+                  setMediaEdit(null);
+                  setFile(null);
+                  setFeedback("");
+                  mutation.reset();
+                  setEditorOpen(true);
+                }}
+              >
+                <Plus size={20} />
+              </button>
             </div>
+            {tab === "media" && (
+              <CollectionTabs
+                label="Статус материалов"
+                prefix="media"
+                value={mediaArchive ? "archive" : "active"}
+                options={[
+                  {
+                    value: "active",
+                    label: "Материалы",
+                  },
+                  { value: "archive", label: "Архив" },
+                ]}
+                onChange={(value) => setMediaArchive(value === "archive")}
+                disabled={mutation.isPending}
+              />
+            )}
             {content.isPending && <p role="status">Загружаем…</p>}
             {content.error && (
               <p role="alert">
@@ -404,279 +444,350 @@ export function AdminPage({ themeToggle }: { themeToggle?: ReactNode }) {
                 </button>
               </p>
             )}
-            {(tab === "events"
-              ? content.data?.events
-              : content.data?.media
-            )?.map((item) => (
-              <article className="admin-row" key={item.id}>
-                <span className="publication">
-                  {item.published ? "Опубликовано" : "Черновик"}
-                </span>
-                <h3>{item.title}</h3>
-                <p>
-                  {"city" in item
-                    ? item.city
-                    : item.kind === "video"
-                      ? "Видео"
-                      : "Изображение"}
-                </p>
-                <div className="row-actions">
-                  <button
-                    aria-label={`Редактировать ${item.title}`}
-                    disabled={mutation.isPending}
-                    onClick={() => {
-                      if ("city" in item) {
-                        editEvent(item);
-                      } else {
-                        setMediaEdit(item);
-                      }
-                    }}
-                  >
-                    <PenLine size={16} /> Редактировать
-                  </button>
-                  <button
-                    disabled={mutation.isPending}
-                    onClick={() =>
-                      void publish(
-                        "city" in item ? "events" : "media",
-                        item.id,
-                        !item.published,
-                      ).catch(() => {})
-                    }
-                  >
-                    {item.published ? "Снять с публикации" : "Опубликовать"}
-                  </button>
-                  <button
-                    aria-label={`Удалить ${item.title}`}
-                    disabled={mutation.isPending}
-                    onClick={() => setDeleting({ type: tab, id: item.id })}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </article>
-            ))}
+            <div
+              className="admin-card-grid"
+              id={tab === "media" ? "media-panel" : undefined}
+              role={tab === "media" ? "tabpanel" : undefined}
+              aria-labelledby={
+                tab === "media"
+                  ? mediaArchive
+                    ? "media-archive"
+                    : "media-active"
+                  : undefined
+              }
+            >
+              {(tab === "events"
+                ? content.data?.events
+                : content.data?.media.filter(
+                    (item) => !!item.archived === mediaArchive,
+                  )
+              )?.map((item) => (
+                <article className="admin-row" key={item.id}>
+                  <span className="publication">
+                    {"archived" in item && item.archived
+                      ? "В архиве"
+                      : item.published
+                        ? "Опубликовано"
+                        : "Черновик"}
+                  </span>
+                  <h3>{item.title}</h3>
+                  <p>
+                    {"city" in item
+                      ? item.city
+                      : item.kind === "video"
+                        ? "Видео"
+                        : "Изображение"}
+                  </p>
+                  <div className="row-actions">
+                    {"archived" in item && item.archived ? (
+                      <button
+                        disabled={mutation.isPending}
+                        onClick={() =>
+                          mutation.mutate(async () => {
+                            await send(
+                              `/api/admin/media/${item.id}/archive`,
+                              "PATCH",
+                              { archived: false },
+                              csrf,
+                            );
+                            setFeedback("Материал восстановлен как черновик.");
+                          })
+                        }
+                      >
+                        Восстановить материал
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          aria-label={`Редактировать ${item.title}`}
+                          disabled={mutation.isPending}
+                          onClick={() => {
+                            if ("city" in item) {
+                              editEvent(item);
+                            } else {
+                              setEditorOpen(true);
+                              setFile(null);
+                              mutation.reset();
+                              setMediaEdit(item);
+                            }
+                          }}
+                        >
+                          <PenLine size={16} /> Редактировать
+                        </button>
+                        <button
+                          disabled={mutation.isPending}
+                          onClick={() =>
+                            void publish(
+                              "city" in item ? "events" : "media",
+                              item.id,
+                              !item.published,
+                            ).catch(() => {})
+                          }
+                        >
+                          {item.published
+                            ? "Снять с публикации"
+                            : "Опубликовать"}
+                        </button>
+                        <button
+                          aria-label={`Удалить ${item.title}`}
+                          disabled={mutation.isPending}
+                          onClick={() =>
+                            setDeleting({ type: tab, id: item.id })
+                          }
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
             {content.data &&
-              (tab === "events" ? content.data.events : content.data.media)
-                .length === 0 && (
+              (tab === "events"
+                ? content.data.events
+                : content.data.media.filter(
+                    (item) => !!item.archived === mediaArchive,
+                  )
+              ).length === 0 && (
                 <p className="empty">
                   Пока ничего нет. Добавьте{" "}
                   {tab === "events" ? "первое событие" : "первый материал"}.
                 </p>
               )}
           </section>
-          <section className="panel editor">
-            <h2>
-              {tab === "events"
-                ? draft.id
-                  ? "Редактировать событие"
-                  : "Новое событие"
-                : mediaEdit
-                  ? "Редактировать материал"
-                  : "Загрузить медиа"}
-            </h2>
-            {tab === "events" ? (
-              <form onSubmit={saveEvent}>
-                <label>
-                  Название события
-                  <input
-                    required
-                    minLength={3}
-                    maxLength={160}
-                    value={draft.title}
-                    onChange={(e) =>
-                      setDraft({ ...draft, title: e.target.value })
-                    }
-                  />
-                </label>
-                <label>
-                  Город
-                  <input
-                    required
-                    minLength={2}
-                    maxLength={100}
-                    value={draft.city}
-                    onChange={(e) =>
-                      setDraft({ ...draft, city: e.target.value })
-                    }
-                  />
-                </label>
-                <label>
-                  Дата и время (МСК)
-                  <input
-                    type="datetime-local"
-                    required
-                    value={draft.startsAt}
-                    onChange={(e) =>
-                      setDraft({ ...draft, startsAt: e.target.value })
-                    }
-                  />
-                </label>
-                <label>
-                  Описание
-                  <textarea
-                    maxLength={4000}
-                    rows={4}
-                    value={draft.description}
-                    onChange={(e) =>
-                      setDraft({ ...draft, description: e.target.value })
-                    }
-                  />
-                </label>
-                <label className="check">
-                  <input
-                    type="checkbox"
-                    checked={draft.published}
-                    onChange={(e) =>
-                      setDraft({ ...draft, published: e.target.checked })
-                    }
-                  />{" "}
-                  Опубликовать на сайте
-                </label>
-                <button
-                  className="button primary"
-                  disabled={mutation.isPending}
-                >
-                  <Plus size={16} />
-                  {mutation.isPending ? "Сохраняем…" : "Сохранить событие"}
-                </button>
-                {draft.id && (
-                  <button
-                    className="button"
-                    type="button"
-                    onClick={() => setDraft(blank)}
-                  >
-                    Отменить редактирование
-                  </button>
-                )}
-              </form>
-            ) : (
-              <form key={mediaEdit?.id ?? "new"} onSubmit={saveMedia}>
-                <label>
-                  Название материала
-                  <input
-                    name="title"
-                    required
-                    minLength={3}
-                    maxLength={160}
-                    defaultValue={mediaEdit?.title}
-                  />
-                </label>
-                <label>
-                  Дата материала
-                  <input
-                    type="date"
-                    name="eventDate"
-                    defaultValue={mediaEdit?.eventDate ?? ""}
-                  />
-                  <small>
-                    Дата события, а для архивной публикации — её дата. Можно
-                    оставить пустой, если дата неизвестна.
-                  </small>
-                </label>
-                <label>
-                  Описание
-                  <textarea
-                    name="description"
-                    rows={4}
-                    maxLength={4000}
-                    defaultValue={mediaEdit?.description}
-                  />
-                </label>
-                {!mediaEdit && (
-                  <label className="upload-zone">
-                    <Upload />
-                    <span>{file?.name ?? "Выбрать фото или видео"}</span>
-                    <small>PNG, JPEG, WebP, MP4 · до 30 МБ</small>
-                    <input
-                      aria-label="Файл медиа"
-                      type="file"
-                      name="file"
-                      accept="image/png,image/jpeg,image/webp,video/mp4"
-                      required={!file}
-                      onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                    />
-                  </label>
-                )}
-                <label className="check">
-                  <input
-                    type="checkbox"
-                    name="published"
-                    key={String(mediaEdit?.published)}
-                    defaultChecked={mediaEdit?.published ?? false}
-                  />{" "}
-                  Опубликовать на сайте
-                </label>
-                <button
-                  className="button primary"
-                  disabled={mutation.isPending}
-                >
-                  {mutation.isPending ? "Сохраняем…" : "Сохранить материал"}
-                </button>
-                {mediaEdit && (
-                  <button
-                    className="button"
-                    type="button"
-                    onClick={() => setMediaEdit(null)}
-                  >
-                    Отменить редактирование
-                  </button>
-                )}
-              </form>
-            )}
-            {tab === "media" && mediaEdit && (
-              <section className="editor-gallery">
-                <h2>Фотографии события</h2>
-                <p>
-                  Обложка сохраняется отдельно. В галерею можно добавить до 30
-                  фотографий.
-                </p>
-                <ul>
-                  {(
-                    content.data?.media.find((item) => item.id === mediaEdit.id)
-                      ?.images ?? []
-                  ).map((image, index) => (
-                    <li key={image.id}>
-                      <img src={image.url} alt={`Фотография ${index + 1}`} />
-                      <button
-                        type="button"
-                        className="button danger"
-                        disabled={mutation.isPending}
-                        aria-label={`Удалить фотографию ${index + 1}`}
-                        onClick={() =>
-                          mutation.mutate(async () => {
-                            await send(
-                              `/api/admin/media/${mediaEdit.id}/images/${image.id}`,
-                              "DELETE",
-                              {},
-                              csrf,
-                            );
-                            setFeedback("Фотография удалена.");
-                          })
-                        }
-                      >
-                        <Trash2 size={16} /> Удалить
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                <form onSubmit={addGalleryImage}>
+          {editorOpen && (
+            <EditorDialog
+              title={
+                tab === "events"
+                  ? draft.id
+                    ? "Редактировать событие"
+                    : "Новое событие"
+                  : mediaEdit
+                    ? "Редактировать материал"
+                    : "Загрузить медиа"
+              }
+              busy={mutation.isPending}
+              onClose={() => {
+                setEditorOpen(false);
+                setDraft({ ...blank });
+                setMediaEdit(null);
+                setFile(null);
+                mutation.reset();
+                setFeedback("");
+              }}
+            >
+              {notice}
+              {tab === "events" ? (
+                <form onSubmit={saveEvent}>
                   <label>
-                    Фотография для галереи
+                    Название события
                     <input
-                      type="file"
-                      name="file"
-                      accept="image/png,image/jpeg,image/webp"
                       required
+                      minLength={3}
+                      maxLength={160}
+                      value={draft.title}
+                      onChange={(e) =>
+                        setDraft({ ...draft, title: e.target.value })
+                      }
                     />
                   </label>
-                  <button className="button" disabled={mutation.isPending}>
-                    Добавить фотографию
+                  <label>
+                    Город
+                    <input
+                      required
+                      minLength={2}
+                      maxLength={100}
+                      value={draft.city}
+                      onChange={(e) =>
+                        setDraft({ ...draft, city: e.target.value })
+                      }
+                    />
+                  </label>
+                  <label>
+                    Дата и время (МСК)
+                    <input
+                      type="datetime-local"
+                      required
+                      value={draft.startsAt}
+                      onChange={(e) =>
+                        setDraft({ ...draft, startsAt: e.target.value })
+                      }
+                    />
+                  </label>
+                  <label>
+                    Описание
+                    <textarea
+                      maxLength={4000}
+                      rows={4}
+                      value={draft.description}
+                      onChange={(e) =>
+                        setDraft({ ...draft, description: e.target.value })
+                      }
+                    />
+                  </label>
+                  <label className="check">
+                    <input
+                      type="checkbox"
+                      checked={draft.published}
+                      onChange={(e) =>
+                        setDraft({ ...draft, published: e.target.checked })
+                      }
+                    />{" "}
+                    Опубликовать на сайте
+                  </label>
+                  <button
+                    className="button primary"
+                    disabled={mutation.isPending}
+                  >
+                    <Plus size={16} />
+                    {mutation.isPending ? "Сохраняем…" : "Сохранить событие"}
                   </button>
+                  {draft.id && (
+                    <button
+                      className="button"
+                      type="button"
+                      onClick={() => {
+                        setDraft({ ...blank });
+                        setEditorOpen(false);
+                      }}
+                    >
+                      Отменить редактирование
+                    </button>
+                  )}
                 </form>
-              </section>
-            )}
-          </section>
+              ) : (
+                <form key={mediaEdit?.id ?? "new"} onSubmit={saveMedia}>
+                  <label>
+                    Название материала
+                    <input
+                      name="title"
+                      required
+                      minLength={3}
+                      maxLength={160}
+                      defaultValue={mediaEdit?.title}
+                    />
+                  </label>
+                  <label>
+                    Дата материала
+                    <input
+                      type="date"
+                      name="eventDate"
+                      defaultValue={mediaEdit?.eventDate ?? ""}
+                    />
+                    <small>
+                      Дата события, а для архивной публикации — её дата. Можно
+                      оставить пустой, если дата неизвестна.
+                    </small>
+                  </label>
+                  <label>
+                    Описание
+                    <textarea
+                      name="description"
+                      rows={4}
+                      maxLength={4000}
+                      defaultValue={mediaEdit?.description}
+                    />
+                  </label>
+                  {!mediaEdit && (
+                    <label className="upload-zone">
+                      <Upload />
+                      <span>{file?.name ?? "Выбрать фото или видео"}</span>
+                      <small>PNG, JPEG, WebP, MP4 · до 30 МБ</small>
+                      <input
+                        aria-label="Файл медиа"
+                        type="file"
+                        name="file"
+                        accept="image/png,image/jpeg,image/webp,video/mp4"
+                        required={!file}
+                        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                      />
+                    </label>
+                  )}
+                  <label className="check">
+                    <input
+                      type="checkbox"
+                      name="published"
+                      key={String(mediaEdit?.published)}
+                      defaultChecked={mediaEdit?.published ?? false}
+                    />{" "}
+                    Опубликовать на сайте
+                  </label>
+                  <button
+                    className="button primary"
+                    disabled={mutation.isPending}
+                  >
+                    {mutation.isPending ? "Сохраняем…" : "Сохранить материал"}
+                  </button>
+                  {mediaEdit && (
+                    <button
+                      className="button"
+                      type="button"
+                      onClick={() => {
+                        setMediaEdit(null);
+                        setEditorOpen(false);
+                      }}
+                    >
+                      Отменить редактирование
+                    </button>
+                  )}
+                </form>
+              )}
+              {tab === "media" && mediaEdit && (
+                <section className="editor-gallery">
+                  <h2>Фотографии события</h2>
+                  <p>
+                    Обложка сохраняется отдельно. В галерею можно добавить до 30
+                    фотографий.
+                  </p>
+                  <ul>
+                    {(
+                      content.data?.media.find(
+                        (item) => item.id === mediaEdit.id,
+                      )?.images ?? []
+                    ).map((image, index) => (
+                      <li key={image.id}>
+                        <img src={image.url} alt={`Фотография ${index + 1}`} />
+                        <button
+                          type="button"
+                          className="button danger"
+                          disabled={mutation.isPending}
+                          aria-label={`Удалить фотографию ${index + 1}`}
+                          onClick={() =>
+                            mutation.mutate(async () => {
+                              await send(
+                                `/api/admin/media/${mediaEdit.id}/images/${image.id}`,
+                                "DELETE",
+                                {},
+                                csrf,
+                              );
+                              setFeedback("Фотография удалена.");
+                            })
+                          }
+                        >
+                          <Trash2 size={16} /> Удалить
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <form onSubmit={addGalleryImage}>
+                    <label>
+                      Фотография для галереи
+                      <input
+                        type="file"
+                        name="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        required
+                      />
+                    </label>
+                    <button className="button" disabled={mutation.isPending}>
+                      Добавить фотографию
+                    </button>
+                  </form>
+                </section>
+              )}
+            </EditorDialog>
+          )}
         </div>
       )}
       {deleting && (

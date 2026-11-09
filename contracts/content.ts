@@ -71,6 +71,7 @@ export const mediaInput = z.object({
 });
 export const eventSchema = eventInput.extend({ id: z.string() });
 export const mediaSchema = mediaInput.extend({
+  archived: z.boolean().optional(),
   id: z.string(),
   url: z.string(),
   kind: z.enum(["image", "video"]),
@@ -110,9 +111,7 @@ export const contentTarget = z.object({
   id: z.string().min(1).max(200),
 });
 export type ContentTarget = z.infer<typeof contentTarget>;
-export const contentUpdateInput = deploymentInput.extend({
-  targets: z.array(contentTarget).min(1).max(100),
-});
+export const contentUpdateInput = deploymentInput.strict();
 export const contentUpdateSchema = deploymentSchema
   .omit({ version: true })
   .extend({ count: z.number().int().positive() });

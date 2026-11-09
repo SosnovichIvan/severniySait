@@ -49,6 +49,15 @@ it("upgrades populated v8 atomically, preserves contacts and files, cancels obso
       kind: "image",
       published: true,
     });
+    for (const row of store.db
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type='trigger' AND name LIKE 'changes_%'",
+      )
+      .all() as { name: string }[])
+      store.db.exec(`DROP TRIGGER ${row.name}`);
+    store.db.exec(
+      "DROP TABLE content_changes; ALTER TABLE media DROP COLUMN archived; DELETE FROM migrations WHERE version>=10",
+    );
     store.db
       .exec(`INSERT INTO content_updates VALUES('old','2026-12-01','2026-11-01','scheduled',1,'[]','');
       DROP TRIGGER division_id_insert; DROP TRIGGER division_id_update; DROP INDEX division_identity;
@@ -58,7 +67,7 @@ it("upgrades populated v8 atomically, preserves contacts and files, cancels obso
       UPDATE channels SET url='https://t.me/sevchelrussia' WHERE id='channel-1';`);
     store.close();
     store = new Store(join(dir, "db.sqlite"));
-    expect(store.list().divisions).toHaveLength(9);
+    expect(store.list().divisions).toHaveLength(10);
     expect(
       store.list(true).divisions.find((d) => d.name === "Москва"),
     ).toMatchObject({
@@ -94,6 +103,8 @@ it("upgrades populated v8 atomically, preserves contacts and files, cancels obso
       detail: expect.stringContaining("Региональный переход"),
     });
     expect(store.list().channels[0].url).toBe("https://t.me/moskvasevchelovek");
+    expect(store.setPublication("media", excluded, true)).toBe(0);
+    store.archiveMedia(excluded, false);
     store.setPublication("media", excluded, true);
     store.close();
     store = new Store(join(dir, "db.sqlite"));
@@ -202,15 +213,21 @@ it("manages new divisions by immutable id, validates access/conflicts, hides dra
     expect(
       (await call("patch", `${path}/publication`, { published: false })).status,
     ).toBe(200);
+    store.saveDivision(
+      {
+        ...store.list(true).divisions.find((d) => d.id === id)!,
+        name: "Updated draft",
+      },
+      id,
+    );
     store.contentUpdates.schedule(
-      [{ kind: "divisions", id }],
       "2026-12-01T00:00:00.000Z",
       "2026-11-01T00:00:00.000Z",
     );
     expect((await call("delete", path)).status).toBe(200);
     expect(store.contentUpdates.drafts().some((d) => d.id === id)).toBe(false);
     store.contentUpdates.process("2026-12-01T00:00:00.000Z");
-    expect(store.contentUpdates.list()[0].status).toBe("failed");
+    expect(store.contentUpdates.list()[0].status).toBe("cancelled");
     expect(
       (await call("patch", `${path}/publication`, { published: true })).status,
     ).toBe(404);
@@ -220,8 +237,14 @@ it("manages new divisions by immutable id, validates access/conflicts, hides dra
       archived: 0,
       coordinator: "Иван",
     });
+    store.saveDivision(
+      {
+        ...store.list(true).divisions.find((d) => d.id === id)!,
+        name: "Restored draft",
+      },
+      id,
+    );
     store.contentUpdates.schedule(
-      [{ kind: "divisions", id }],
       "2026-12-02T00:00:00.000Z",
       "2026-11-01T00:00:00.000Z",
     );

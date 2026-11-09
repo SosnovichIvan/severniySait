@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 export function ConfirmDialog({
   busy,
   onCancel,
@@ -6,6 +6,7 @@ export function ConfirmDialog({
   title = "Удалить запись?",
   description = "Запись будет удалена из редакции и с сайта.",
   confirmLabel = "Удалить",
+  notice,
 }: {
   busy: boolean;
   onCancel: () => void;
@@ -13,6 +14,7 @@ export function ConfirmDialog({
   title?: string;
   description?: string;
   confirmLabel?: string;
+  notice?: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -32,6 +34,7 @@ export function ConfirmDialog({
     >
       <h2 id="delete-title">{title}</h2>
       <p>{description}</p>
+      {notice}
       <div className="row-actions">
         <button autoFocus className="button" onClick={onCancel}>
           Отмена

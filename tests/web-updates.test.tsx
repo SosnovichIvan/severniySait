@@ -48,9 +48,16 @@ it("saves an explicit Moscow update time, preserves failed input, prevents overl
     return { ok: true };
   });
   expect(screen.getByRole("status")).toHaveTextContent("Загружаем");
-  await screen.findByText("Черновик события");
+  await waitFor(() =>
+    expect(
+      screen.getByRole("button", { name: "Назначить обновление" }),
+    ).toBeEnabled(),
+  );
   const user = userEvent.setup();
-  await user.click(screen.getByRole("checkbox", { name: "Черновик события" }));
+  await user.click(
+    screen.getByRole("button", { name: "Назначить обновление" }),
+  );
+  expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
   expect(screen.queryByLabelText("Версия обновления")).not.toBeInTheDocument();
   fireEvent.change(screen.getByLabelText("Дата и время обновления (МСК)"), {
     target: { value: "2026-12-01T03:00" },
@@ -73,15 +80,14 @@ it("saves an explicit Moscow update time, preserves failed input, prevents overl
     .mock.calls.find(([, options]) => options?.method === "POST")!;
   expect(JSON.parse(String(call[1]?.body))).toEqual({
     scheduledAt: "2026-12-01T00:00:00.000Z",
-    targets: [{ kind: "events", id: "draft" }],
   });
   expect(
-    screen.getByRole("button", { name: "Запланировать обновление" }),
+    screen.getByRole("button", { name: "Назначить обновление" }),
   ).toBeDisabled();
   await user.click(screen.getByRole("button", { name: "Отменить обновление" }));
   expect(await screen.findByText("Отменено")).toBeInTheDocument();
   expect(
-    screen.getByRole("button", { name: "Запланировать обновление" }),
+    screen.getByRole("button", { name: "Назначить обновление" }),
   ).toBeEnabled();
 });
 it("retries schedule loading and displays worker outcomes without cancellation of running jobs", async () => {

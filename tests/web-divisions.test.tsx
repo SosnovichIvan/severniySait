@@ -20,7 +20,9 @@ it("creates districts and cities, retains a failed draft, and selects themed geo
     />,
   );
   expect(screen.getByText("Подразделение не найдено.")).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "Добавить" }));
+  await user.click(
+    screen.getByRole("button", { name: "Добавить подразделение" }),
+  );
   await user.type(screen.getByLabelText("Название подразделения"), "Реутов");
   await user.click(screen.getByRole("combobox", { name: "Регион" }));
   await user.click(screen.getByRole("option", { name: "Московская область" }));
@@ -118,15 +120,13 @@ it("confirms reversible removal, supports cancellation and retry, restores archi
     screen.getByRole("button", { name: "Восстановить как черновик" }),
   );
   await waitFor(() => expect(onArchive).toHaveBeenLastCalledWith("vao", false));
-  await user.click(screen.getByRole("button", { name: "Архив подразделений" }));
+  await user.click(screen.getByRole("tab", { name: "Архив" }));
   await user.type(
     screen.getByRole("textbox", { name: "Найти подразделение" }),
     "нет",
   );
   expect(screen.getByText("Подразделение не найдено.")).toBeInTheDocument();
-  await user.click(
-    screen.getByRole("button", { name: "Действующие подразделения" }),
-  );
+  await user.click(screen.getByRole("tab", { name: "Действующие" }));
   rerender(
     <DivisionEditor
       links={[
@@ -143,5 +143,7 @@ it("confirms reversible removal, supports cancellation and retry, restores archi
       onArchive={onArchive}
     />,
   );
-  expect(screen.getByRole("button", { name: "Добавить" })).toBeDisabled();
+  expect(
+    screen.getByRole("button", { name: "Добавить подразделение" }),
+  ).toBeDisabled();
 });

@@ -1,3 +1,6 @@
+import { migrateChangeTriggers } from "./change-trigger-migration.js";
+import { migrateMediaArchive } from "./media-archive-migration.js";
+import { migrateEditorialChanges } from "./editorial-migration.js";
 import { migrateRegion } from "./regional-migration.js";
 import { Divisions } from "./divisions.js";
 import { ContentUpdates } from "./content-updates.js";
@@ -72,6 +75,9 @@ export class Store {
     })();
     this.contentUpdates = new ContentUpdates(this.db);
     migrateRegion(this.db);
+    migrateEditorialChanges(this.db);
+    migrateMediaArchive(this.db);
+    migrateChangeTriggers(this.db);
     this.divisionCatalog = new Divisions(this.db);
   }
   deployments() {
@@ -150,9 +156,12 @@ export class Store {
       .all() as (Omit<EventRecord, "published"> & { published: number })[];
     const media = this.db
       .prepare(
-        `SELECT * FROM media ${admin ? "" : "WHERE published=1"} ORDER BY rowid DESC LIMIT 500`,
+        `SELECT * FROM media ${admin ? "" : "WHERE published=1 AND archived=0"} ORDER BY rowid DESC LIMIT 500`,
       )
-      .all() as (Omit<MediaRecord, "published"> & { published: number })[];
+      .all() as (Omit<MediaRecord, "published" | "archived"> & {
+      published: number;
+      archived: number;
+    })[];
     const channels = this.db
       .prepare(
         `SELECT * FROM channels ${admin ? "" : "WHERE published=1"} ORDER BY rowid`,
@@ -168,6 +177,7 @@ export class Store {
       events: events.map((e) => ({ ...e, published: !!e.published })),
       media: media.map((e) => ({
         ...e,
+        archived: !!e.archived,
         published: !!e.published,
         images: this.images(e.id),
       })),
@@ -178,7 +188,12 @@ export class Store {
   }
   setPublication(kind: PublicationKind, id: string, published: boolean) {
     if (kind === "divisions")
-      return this.divisionCatalog.publish(id, published);
+      return this.db.transaction(() => {
+        const row = this.divisionCatalog.find(id);
+        const changed = this.divisionCatalog.publish(id, published);
+        if (row?.id) this.contentUpdates.discard(kind, row.id);
+        return changed;
+      })();
     const table = {
       events: "events",
       media: "media",
@@ -186,10 +201,17 @@ export class Store {
       channels: "channels",
     }[kind];
     const key = "id";
-    return this.db
-      .prepare(`UPDATE ${table} SET published=? WHERE ${key}=?`)
-      .run(+published, id).changes;
+    return this.db.transaction(() => {
+      const changed = this.db
+        .prepare(
+          `UPDATE ${table} SET published=? WHERE ${key}=? ${kind === "media" ? "AND archived=0" : ""}`,
+        )
+        .run(+published, id).changes;
+      this.contentUpdates.discard(kind, id);
+      return changed;
+    })();
   }
+
   saveChannel(input: Omit<ChannelRecord, "id">, id: string = randomUUID()) {
     this.db
       .prepare(
@@ -238,7 +260,7 @@ export class Store {
   ) {
     return this.db
       .prepare(
-        "UPDATE media SET title=@title,description=@description,published=@published,eventDate=coalesce(@eventDate,eventDate) WHERE id=@id",
+        "UPDATE media SET title=@title,description=@description,published=@published,eventDate=coalesce(@eventDate,eventDate) WHERE id=@id AND archived=0",
       )
       .run({
         ...input,
@@ -246,6 +268,15 @@ export class Store {
         id,
         published: +input.published,
       }).changes;
+  }
+  archiveMedia(id: string, archived: boolean) {
+    return this.db.transaction(() => {
+      const changed = this.db
+        .prepare("UPDATE media SET published=0,archived=? WHERE id=?")
+        .run(+archived, id).changes;
+      this.contentUpdates.discard("media", id);
+      return changed;
+    })();
   }
   deleteEvent(id: string) {
     return this.db.prepare("DELETE FROM events WHERE id=?").run(id).changes;

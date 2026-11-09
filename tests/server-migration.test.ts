@@ -35,6 +35,9 @@ it("upgrades a populated v1 archive without losing data and reopens safely", asy
       { version: 7 },
       { version: 8 },
       { version: 9 },
+      { version: 10 },
+      { version: 11 },
+      { version: 12 },
     ]);
     expect(store.list().media).toHaveLength(1);
     store.close();

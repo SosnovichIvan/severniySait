@@ -1,3 +1,4 @@
+import { BrandLockup } from "../shared/ui/brand-lockup";
 import { LoginDialog } from "../features/editor-login";
 import { useQuery } from "@tanstack/react-query";
 import { loadContent } from "../shared/api";
@@ -67,13 +68,7 @@ export function App() {
               to="/"
               aria-label="Северный человек — главная"
             >
-              <span className="header-brand-name" aria-hidden="true">
-                Северный<span>человек</span>
-                <small className="header-region">Москва и область</small>
-              </span>
-              <span className="header-brand-short" aria-hidden="true">
-                СЧ
-              </span>
+              <BrandLockup />
             </Link>
             <nav
               className={open ? "navigation open" : "navigation"}

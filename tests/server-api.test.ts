@@ -292,7 +292,9 @@ describe("API and storage", () => {
     expect(second.db.pragma("integrity_check", { simple: true })).toBe("ok");
     expect(second.db.pragma("foreign_key_check")).toEqual([]);
     expect(second.db.pragma("foreign_keys", { simple: true })).toBe(1);
-    expect(second.db.prepare("SELECT * FROM migrations").all()).toHaveLength(9);
+    expect(second.db.prepare("SELECT * FROM migrations").all()).toHaveLength(
+      12,
+    );
     second.close();
     const sessions = new SqliteSessions(store);
     sessions.get("missing", (_e, v) => expect(v).toBeNull());

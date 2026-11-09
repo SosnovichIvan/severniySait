@@ -1,11 +1,14 @@
-import { useState, type FormEvent } from "react";
+import { CollectionTabs } from "../../../shared/ui/collection-tabs";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { MapPin, Search, Plus, Archive, RotateCcw } from "lucide-react";
+import { EditorDialog } from "../../../shared/ui/editor-dialog";
 import { Select } from "../../../shared/ui/select";
 import { ConfirmDialog } from "../../../shared/ui/confirm-dialog";
 import type { DivisionLink } from "../../../../contracts/content";
 
 type Props = {
   links: DivisionLink[];
+  notice?: ReactNode;
   pending: boolean;
   onSave: (link: DivisionLink) => Promise<unknown>;
   onArchive: (id: string, archived: boolean) => Promise<unknown>;
@@ -19,7 +22,13 @@ const fields = [
   ["email", "Электронная почта", "email", 254],
   ["website", "Ссылка на сайт", "url", 2000],
 ] as const;
-export function DivisionEditor({ links, pending, onSave, onArchive }: Props) {
+export function DivisionEditor({
+  links,
+  pending,
+  onSave,
+  onArchive,
+  notice,
+}: Props) {
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState<DivisionLink | null>(null);
   const [archiving, setArchiving] = useState(false);
@@ -49,14 +58,17 @@ export function DivisionEditor({ links, pending, onSave, onArchive }: Props) {
     }
   }
   return (
-    <div className="admin-grid division-editor">
+    <div className="division-editor admin-collection">
+      {!draft && notice}
       <section className="panel">
         <div className="section-heading">
           <h2>Подразделения</h2>
           <button
             type="button"
-            className="button primary"
-            disabled={pending}
+            className="button primary add-entity"
+            disabled={pending || showArchive}
+            aria-label="Добавить подразделение"
+            title="Добавить подразделение"
             onClick={() =>
               setDraft({
                 name: "",
@@ -68,44 +80,56 @@ export function DivisionEditor({ links, pending, onSave, onArchive }: Props) {
             }
           >
             <Plus size={18} />
-            Добавить
           </button>
         </div>
-        <button
-          type="button"
-          className="button"
-          disabled={pending}
-          aria-pressed={showArchive}
-          onClick={() => {
-            setShowArchive(!showArchive);
-            setDraft(null);
-          }}
-        >
-          {showArchive ? "Действующие подразделения" : "Архив подразделений"}
-        </button>
-        <label className="search-box">
-          <Search size={20} />
-          <input
-            aria-label="Найти подразделение"
-            placeholder="Найти округ или город"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+        <div className="division-filters">
+          <CollectionTabs
+            label="Статус подразделений"
+            prefix="divisions"
+            value={showArchive ? "archive" : "active"}
+            options={[
+              {
+                value: "active",
+                label: "Действующие",
+              },
+              { value: "archive", label: "Архив" },
+            ]}
+            disabled={pending}
+            onChange={(value) => {
+              setShowArchive(value === "archive");
+              setSearch("");
+            }}
           />
-          <span>{filtered.length}</span>
-        </label>
-        <div className="division-editor-list">
+          <label className="search-box">
+            <Search size={20} />
+            <input
+              aria-label="Найти подразделение"
+              placeholder="Найти округ или город"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </label>
+        </div>
+        <div
+          className="division-grid admin-division-cards"
+          id="divisions-panel"
+          role="tabpanel"
+          aria-labelledby={
+            showArchive ? "divisions-archive" : "divisions-active"
+          }
+        >
           {filtered.map((saved) => (
             <button
               type="button"
-              className="button"
+              className="division-card admin-division-card"
               key={saved.id ?? saved.name}
               disabled={pending}
               aria-label={`Редактировать подразделение ${saved.name}`}
               aria-pressed={draft?.name === saved.name}
               onClick={() => setDraft({ ...saved })}
             >
-              <MapPin size={16} />
-              <span>{saved.name}</span>
+              <MapPin size={20} />
+              <span className="admin-division-name">{saved.name}</span>
               <small>
                 {saved.archived
                   ? "В архиве"
@@ -119,9 +143,13 @@ export function DivisionEditor({ links, pending, onSave, onArchive }: Props) {
         </div>
         {!filtered.length && <p className="empty">Подразделение не найдено.</p>}
       </section>
-      <section className="panel editor">
-        <h2>{draft?.name || "Новое подразделение"}</h2>
-        {draft ? (
+      {draft && (
+        <EditorDialog
+          title={draft.id ? draft.name : "Добавить подразделение"}
+          busy={pending}
+          onClose={() => setDraft(null)}
+        >
+          {!archiving && notice}
           <form onSubmit={(event) => void save(event)}>
             <fieldset
               disabled={pending || draft.archived}
@@ -243,15 +271,11 @@ export function DivisionEditor({ links, pending, onSave, onArchive }: Props) {
                 </button>
               ))}
           </form>
-        ) : (
-          <p>
-            Выберите подразделение или добавьте новое. Здесь можно управлять
-            округами Москвы и городами Подмосковья.
-          </p>
-        )}
-      </section>
+        </EditorDialog>
+      )}
       {archiving && (
         <ConfirmDialog
+          notice={notice}
           busy={pending}
           title="Убрать подразделение?"
           description="Карточка исчезнет с сайта. Контакты сохранятся в архиве; подразделение можно будет восстановить."

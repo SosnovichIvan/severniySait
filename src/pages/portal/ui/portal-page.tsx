@@ -294,7 +294,6 @@ export function PortalPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
-                <span>{filtered.length}</span>
               </label>
               <div className="division-grid">
                 {filtered.map((d) =>
@@ -570,11 +569,6 @@ function MediaCard({ item }: { item: MediaRecord }) {
         ) : (
           <img src={item.url} alt={item.title} loading="lazy" />
         )}
-        <span className="media-photo-count">
-          {item.kind === "video"
-            ? "Видео"
-            : `Кадров: ${1 + (item.images?.length ?? 0)}`}
-        </span>
       </Link>
       <p className="eyebrow">
         {item.eventDate ? (

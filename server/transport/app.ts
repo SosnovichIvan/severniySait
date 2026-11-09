@@ -144,7 +144,6 @@ export function createApp(options: AppOptions) {
         .json({ error: "Выберите время минимум на минуту позже текущего." });
     try {
       const id = options.store.contentUpdates.schedule(
-        input.targets,
         new Date(input.scheduledAt).toISOString(),
         now.toISOString(),
       );
@@ -328,6 +327,12 @@ export function createApp(options: AppOptions) {
       }
     },
   );
+  app.patch("/api/admin/media/:id/archive", (req, res) => {
+    const { archived } = z.object({ archived: z.boolean() }).parse(req.body);
+    if (!options.store.archiveMedia(req.params.id, archived))
+      return res.status(404).json({ error: "Материал не найден" });
+    res.json({ ok: true });
+  });
   app.put("/api/admin/media/:id", (req, res) => {
     const input = mediaInput.parse(req.body);
     if (!options.store.updateMedia(req.params.id, input))
@@ -411,7 +416,7 @@ export function createApp(options: AppOptions) {
             (image) => image.url === `/uploads/${req.params.name}`,
           ),
       );
-    if (!item || (!item.published && !req.session.admin))
+    if (!item || ((!item.published || item.archived) && !req.session.admin))
       return res.sendStatus(404);
     next();
   });

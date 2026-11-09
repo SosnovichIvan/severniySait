@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import { randomUUID, createHash } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import type { ContentTarget, ContentUpdate } from "../../contracts/content.js";
 const tables = {
   events: "events",
@@ -18,37 +18,15 @@ export class ContentUpdates {
       INSERT OR IGNORE INTO migrations VALUES(8);`),
     )();
   }
-  private row(target: ContentTarget) {
-    return this.db
-      .prepare(
-        `SELECT * FROM ${tables[target.kind]} WHERE ${target.kind === "divisions" ? "(id=? OR name=?) AND archived=0 AND region!='Другой регион'" : "id=?"}`,
-      )
-      .get(
-        ...(target.kind === "divisions" ? [target.id, target.id] : [target.id]),
-      ) as Record<string, unknown> | undefined;
-  }
-  private fingerprint(target: ContentTarget) {
-    const row = this.row(target);
-    if (!row || row.published !== 0) return null;
-    const images =
-      target.kind === "media"
-        ? this.db
-            .prepare("SELECT * FROM media_images WHERE mediaId=? ORDER BY id")
-            .all(target.id)
-        : [];
-    return createHash("sha256")
-      .update(JSON.stringify([row, images]))
-      .digest("hex");
-  }
   drafts() {
     return (Object.keys(tables) as ContentTarget["kind"][]).flatMap((kind) =>
       (
         this.db
           .prepare(
-            `SELECT ${kind === "divisions" ? "id,name" : kind === "channels" ? "id,name" : "id,title AS name"} FROM ${tables[kind]} WHERE published=0 ${kind === "divisions" ? "AND archived=0 AND region!='Другой регион'" : ""} ORDER BY rowid`,
+            `SELECT t.id,${kind === "channels" || kind === "divisions" ? "t.name" : "t.title"} AS title FROM ${tables[kind]} t JOIN content_changes c ON c.id=t.id AND c.kind=? WHERE t.published=0 ${kind === "divisions" ? "AND t.archived=0 AND t.region!='Другой регион'" : kind === "media" ? "AND t.archived=0" : ""} ORDER BY t.rowid`,
           )
-          .all() as { id: string; name: string }[]
-      ).map((row) => ({ kind, id: row.id, title: row.name })),
+          .all(kind) as { id: string; title: string }[]
+      ).map((row) => ({ kind, ...row })),
     );
   }
   list() {
@@ -58,7 +36,12 @@ export class ContentUpdates {
       )
       .all() as ContentUpdate[];
   }
-  schedule(targets: ContentTarget[], scheduledAt: string, now: string) {
+  discard(kind: ContentTarget["kind"], id: string) {
+    this.db
+      .prepare("DELETE FROM content_changes WHERE kind=? AND id=?")
+      .run(kind, id);
+  }
+  schedule(scheduledAt: string, now: string) {
     return this.db
       .transaction(() => {
         if (
@@ -66,21 +49,20 @@ export class ContentUpdates {
             .prepare("SELECT 1 FROM content_updates WHERE status='scheduled'")
             .get()
         )
-          throw new Error("Сначала отмените или дождитесь текущей публикации.");
-        const keys = targets.map((target) => `${target.kind}:${target.id}`);
-        if (new Set(keys).size !== keys.length)
-          throw new Error("Материалы не должны повторяться.");
-        const payload = targets.map((target) => {
-          const fingerprint = this.fingerprint(target);
-          if (!fingerprint) throw new Error("Выберите существующие черновики.");
-          return { ...target, fingerprint };
-        });
+          throw new Error(
+            "Сначала отмените или дождитесь текущего обновления.",
+          );
+        const pending = this.drafts();
+        if (!pending.length)
+          throw new Error(
+            "Нет ожидающих изменений. Сохраните новый или изменённый черновик.",
+          );
         const id = randomUUID();
         this.db
           .prepare(
-            "INSERT INTO content_updates(id,scheduledAt,createdAt,status,count,payload) VALUES(?,?,?,'scheduled',?,?)",
+            "INSERT INTO content_updates(id,scheduledAt,createdAt,status,count,payload) VALUES(?,?,?,'scheduled',?,'all-pending')",
           )
-          .run(id, scheduledAt, now, targets.length, JSON.stringify(payload));
+          .run(id, scheduledAt, now, pending.length);
         return id;
       })
       .immediate();
@@ -99,44 +81,34 @@ export class ContentUpdates {
           .prepare(
             "SELECT * FROM content_updates WHERE status='scheduled' AND scheduledAt<=? LIMIT 1",
           )
-          .get(now) as (ContentUpdate & { payload: string }) | undefined;
+          .get(now) as ContentUpdate | undefined;
         if (!job) return false;
-        const targets = JSON.parse(job.payload) as (ContentTarget & {
-          fingerprint: string;
-        })[];
-        const changed = targets.some(
-          (target) => this.fingerprint(target) !== target.fingerprint,
-        );
-        const missed =
-          Date.parse(now) - Date.parse(job.scheduledAt) > 10 * 60000;
-        if (changed || missed) {
+        if (Date.parse(now) - Date.parse(job.scheduledAt) > 10 * 60000) {
           this.db
             .prepare(
-              "UPDATE content_updates SET status='failed',detail=? WHERE id=?",
+              "UPDATE content_updates SET status='failed',detail='Время публикации пропущено. Назначьте её заново.' WHERE id=?",
             )
-            .run(
-              changed
-                ? "Черновики изменены или удалены. Проверьте их и назначьте публикацию заново."
-                : "Время публикации пропущено. Назначьте её заново.",
-              job.id,
-            );
+            .run(job.id);
+          return true;
+        }
+        const targets = this.drafts();
+        if (!targets.length) {
+          this.db
+            .prepare(
+              "UPDATE content_updates SET status='cancelled',detail='Ожидающих изменений больше нет. Публикация не требуется.' WHERE id=?",
+            )
+            .run(job.id);
           return true;
         }
         for (const target of targets)
           this.db
-            .prepare(
-              `UPDATE ${tables[target.kind]} SET published=1 WHERE ${target.kind === "divisions" ? "(id=? OR name=?) AND archived=0 AND region!='Другой регион'" : "id=?"}`,
-            )
-            .run(
-              ...(target.kind === "divisions"
-                ? [target.id, target.id]
-                : [target.id]),
-            );
+            .prepare(`UPDATE ${tables[target.kind]} SET published=1 WHERE id=?`)
+            .run(target.id);
         this.db
           .prepare(
-            "UPDATE content_updates SET status='succeeded',detail='Выбранные материалы опубликованы. Код сайта не изменён.' WHERE id=?",
+            "UPDATE content_updates SET status='succeeded',count=?,detail='Все ожидающие изменения опубликованы. Код сайта не изменён.' WHERE id=?",
           )
-          .run(job.id);
+          .run(targets.length, job.id);
         return true;
       })
       .immediate();
