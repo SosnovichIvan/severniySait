@@ -15,7 +15,7 @@ import { z } from "zod";
 import {
   eventInput,
   mediaInput,
-  divisionInput,
+  divisionSaveInput,
   channelInput,
   publicationInput,
   publicationKind,
@@ -144,7 +144,6 @@ export function createApp(options: AppOptions) {
         .json({ error: "Выберите время минимум на минуту позже текущего." });
     try {
       const id = options.store.contentUpdates.schedule(
-        input.targets,
         new Date(input.scheduledAt).toISOString(),
         now.toISOString(),
       );
@@ -240,8 +239,39 @@ export function createApp(options: AppOptions) {
       return res.status(404).json({ error: "Площадка не найдена." });
     res.json({ ok: true });
   });
+  app.post("/api/admin/divisions", (req, res) => {
+    const input = divisionSaveInput.parse(req.body);
+    if (options.store.divisionCatalog.find(input.name))
+      return res
+        .status(409)
+        .json({ error: "Подразделение с таким названием уже существует." });
+    res.status(201).json({ id: options.store.saveDivision(input) });
+  });
+  app.put("/api/admin/divisions/:id", (req, res) => {
+    const input = divisionSaveInput.parse(req.body);
+    const previous = options.store.divisionCatalog.find(req.params.id);
+    if (!previous)
+      return res.status(404).json({ error: "Подразделение не найдено." });
+    const conflict = options.store.divisionCatalog.find(input.name);
+    if (conflict && conflict.id !== previous.id)
+      return res
+        .status(409)
+        .json({ error: "Подразделение с таким названием уже существует." });
+    res.json({ id: options.store.saveDivision(input, previous.id) });
+  });
+  app.delete("/api/admin/divisions/:id", (req, res) => {
+    if (!options.store.divisionCatalog.archive(req.params.id, true))
+      return res.status(404).json({ error: "Подразделение не найдено." });
+    res.json({ ok: true });
+  });
+  app.patch("/api/admin/divisions/:id/archive", (req, res) => {
+    if (!options.store.divisionCatalog.archive(req.params.id, false))
+      return res.status(404).json({ error: "Подразделение не найдено." });
+    res.json({ ok: true });
+  });
+  // Compatibility for previous editorial clients; new UI uses stable identities.
   app.put("/api/admin/divisions", (req, res) => {
-    options.store.saveDivision(divisionInput.parse(req.body));
+    options.store.saveDivision(divisionSaveInput.parse(req.body));
     res.json({ ok: true });
   });
   app.post("/api/admin/events", (req, res) => {
@@ -297,6 +327,12 @@ export function createApp(options: AppOptions) {
       }
     },
   );
+  app.patch("/api/admin/media/:id/archive", (req, res) => {
+    const { archived } = z.object({ archived: z.boolean() }).parse(req.body);
+    if (!options.store.archiveMedia(req.params.id, archived))
+      return res.status(404).json({ error: "Материал не найден" });
+    res.json({ ok: true });
+  });
   app.put("/api/admin/media/:id", (req, res) => {
     const input = mediaInput.parse(req.body);
     if (!options.store.updateMedia(req.params.id, input))
@@ -380,7 +416,7 @@ export function createApp(options: AppOptions) {
             (image) => image.url === `/uploads/${req.params.name}`,
           ),
       );
-    if (!item || (!item.published && !req.session.admin))
+    if (!item || ((!item.published || item.archived) && !req.session.admin))
       return res.sendStatus(404);
     next();
   });

@@ -29,6 +29,8 @@ beforeEach(async () => {
   resolvedVersion.mockReset().mockResolvedValue("1.2.3");
   dir = await mkdtemp(join(tmpdir(), "sever-test-"));
   store = new Store(join(dir, "test.sqlite"));
+  // API scenarios isolate their records; regional initial catalogue is tested in migration tests.
+  store.db.exec("DELETE FROM division_links");
   agent = supertest.agent(
     createApp({
       store,
@@ -290,7 +292,9 @@ describe("API and storage", () => {
     expect(second.db.pragma("integrity_check", { simple: true })).toBe("ok");
     expect(second.db.pragma("foreign_key_check")).toEqual([]);
     expect(second.db.pragma("foreign_keys", { simple: true })).toBe(1);
-    expect(second.db.prepare("SELECT * FROM migrations").all()).toHaveLength(8);
+    expect(second.db.prepare("SELECT * FROM migrations").all()).toHaveLength(
+      12,
+    );
     second.close();
     const sessions = new SqliteSessions(store);
     sessions.get("missing", (_e, v) => expect(v).toBeNull());
@@ -489,16 +493,16 @@ it("persists editorial division links, validates destinations and protects chang
   ]) {
     expect((await update({ name: "Москва", url })).status).toBe(400);
   }
-  expect(
-    (await update({ name: "Нетгорода", url: "https://example.org" })).status,
-  ).toBe(400);
+  expect((await update({ name: "", url: "https://example.org" })).status).toBe(
+    400,
+  );
   for (const url of [
     "https://example.org/moscow",
     "http://example.org/new",
     "",
   ]) {
     expect((await update({ name: "Москва", url })).status).toBe(200);
-    expect((await agent.get("/api/content")).body.divisions).toEqual([
+    expect((await agent.get("/api/content")).body.divisions).toMatchObject([
       { name: "Москва", url },
     ]);
     expect(
@@ -507,7 +511,7 @@ it("persists editorial division links, validates destinations and protects chang
   }
   store.close();
   store = new Store(join(dir, "test.sqlite"));
-  expect(store.list().divisions).toEqual([{ name: "Москва", url: "" }]);
+  expect(store.list().divisions).toMatchObject([{ name: "Москва", url: "" }]);
 });
 
 it("validates optional division contacts, preserves omissions and clears explicitly", async () => {
@@ -539,13 +543,15 @@ it("validates optional division contacts, preserves omissions and clears explici
   expect((await update({ name: "Москва", url: "", ...fields })).status).toBe(
     200,
   );
-  expect((await agent.get("/api/admin/content")).body.divisions[0]).toEqual({
+  expect(
+    (await agent.get("/api/admin/content")).body.divisions[0],
+  ).toMatchObject({
     name: "Москва",
     url: "",
     published: true,
     ...fields,
   });
-  expect((await agent.get("/api/content")).body.divisions[0]).toEqual({
+  expect((await agent.get("/api/content")).body.divisions[0]).toMatchObject({
     name: "Москва",
     url: "",
   });

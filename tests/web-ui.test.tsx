@@ -37,7 +37,12 @@ const photo = {
   published: true,
 };
 const video = { ...photo, id: "video", title: "Видео встречи", kind: "video" };
-const content = { events: [event], media: [photo, video], channels };
+const content = {
+  events: [event],
+  media: [photo, video],
+  channels,
+  divisions: [{ id: "moscow", name: "Москва", url: "" }],
+};
 function mockApi(handler?: (url: string, options?: RequestInit) => unknown) {
   vi.stubGlobal(
     "fetch",
@@ -175,7 +180,7 @@ describe("public UI", () => {
       screen.getByRole("textbox", { name: "Найти город" }),
       "Нетгорода",
     );
-    expect(screen.getByText(/Город не найден/)).toBeInTheDocument();
+    expect(screen.getByText(/Подразделение не найдено/)).toBeInTheDocument();
   });
   it("changes calendar months and day filters", async () => {
     mockApi();
@@ -270,7 +275,7 @@ describe("admin UI", () => {
     expect(
       await screen.findByRole("heading", {
         level: 1,
-        name: "Северный человек",
+        name: /Северный человек/,
       }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -281,6 +286,7 @@ describe("admin UI", () => {
     mockApi();
     const user = userEvent.setup();
     mount(<AdminPage />, "/admin", content, true);
+    await user.click(screen.getByRole("button", { name: "Добавить событие" }));
     await user.type(
       screen.getByLabelText("Название события"),
       "Тестовое событие",
@@ -311,13 +317,15 @@ describe("admin UI", () => {
     await user.click(
       screen.getByRole("button", { name: "Отменить редактирование" }),
     );
-    expect(screen.getByLabelText("Название события")).toHaveValue("");
+    expect(screen.queryByLabelText("Название события")).not.toBeInTheDocument();
     await user.click(
       screen.getByRole("button", { name: `Редактировать ${event.title}` }),
     );
     await user.click(screen.getByRole("button", { name: "Сохранить событие" }));
     await waitFor(() =>
-      expect(screen.getByLabelText("Название события")).toHaveValue(""),
+      expect(
+        screen.queryByLabelText("Название события"),
+      ).not.toBeInTheDocument(),
     );
     await user.click(
       screen.getByRole("button", { name: `Удалить ${event.title}` }),
@@ -368,6 +376,7 @@ describe("admin UI", () => {
     );
     await user.click(screen.getByRole("button", { name: "Медиа" }));
     expect(screen.getByText("Черновик")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Добавить материал" }));
     await user.type(screen.getByLabelText("Название материала"), "Материал");
     await user.type(screen.getByLabelText("Описание"), "Медиа описание");
     await user.upload(
@@ -421,14 +430,10 @@ describe("admin UI", () => {
       screen.getByRole("button", { name: "Сохранить материал" }),
     );
     await waitFor(() =>
-      expect(
-        screen.getByRole("heading", { name: "Загрузить медиа" }),
-      ).toBeInTheDocument(),
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
     );
     await user.click(screen.getByRole("button", { name: "События" }));
-    expect(
-      screen.getByRole("heading", { name: "Новое событие" }),
-    ).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
   it("shows empty admin and fetch failure retry", async () => {
     mockApi();
@@ -550,7 +555,7 @@ it("edits division links, searches cities and retains input on failure", async (
   const user = userEvent.setup();
   mount(<AdminPage />, "/admin", { ...content, divisions: links }, true);
   await user.click(screen.getByRole("button", { name: "Подразделения" }));
-  expect(screen.getByText(/Выберите город слева/)).toBeInTheDocument();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   await user.type(
     screen.getByRole("textbox", { name: "Найти подразделение" }),
     "Москва",
@@ -599,7 +604,9 @@ it("edits division links, searches cities and retains input on failure", async (
     expect(field).toHaveValue(value);
     await user.clear(field);
   }
-  await user.clear(input);
+  await user.clear(
+    screen.getByRole("textbox", { name: "Ссылка для перехода" }),
+  );
   await user.click(screen.getByLabelText("Опубликовать на сайте"));
   await user.click(
     screen.getByRole("button", { name: "Сохранить подразделение" }),
@@ -612,7 +619,7 @@ it("edits division links, searches cities and retains input on failure", async (
     screen.getByRole("textbox", { name: "Найти подразделение" }),
     "нетгорода",
   );
-  expect(screen.getByText("Город не найден.")).toBeInTheDocument();
+  expect(screen.getByText("Подразделение не найдено.")).toBeInTheDocument();
 });
 
 it("keeps admin separate from public chrome and switches event and media publication", async () => {
@@ -671,6 +678,7 @@ it("edits channels, retains a failed draft, updates publication and removes with
   const user = userEvent.setup();
   mount(<AdminPage />, "/admin", { ...content, channels: records }, true);
   await user.click(screen.getByRole("button", { name: "Площадки и каналы" }));
+  await user.click(screen.getByRole("button", { name: "Добавить площадку" }));
   await user.type(screen.getByLabelText("Название площадки"), "Новый канал");
   await user.type(
     screen.getByLabelText("Ссылка на площадку"),
@@ -689,35 +697,69 @@ it("edits channels, retains a failed draft, updates publication and removes with
   await user.click(
     screen.getByRole("button", { name: "Редактировать Новый канал" }),
   );
+  await user.click(screen.getByRole("button", { name: "Закрыть редактор" }));
   failPublish = true;
   await user.click(screen.getByRole("button", { name: "Опубликовать" }));
   expect(await screen.findByRole("alert")).toHaveTextContent(
     "Ошибка публикации",
   );
-  expect(screen.getByLabelText("Опубликовать на сайте")).not.toBeChecked();
   failPublish = false;
   await user.click(screen.getByRole("button", { name: "Опубликовать" }));
   expect(await screen.findByText("Опубликовано")).toBeInTheDocument();
-  expect(screen.getByLabelText("Опубликовать на сайте")).toBeChecked();
   await user.click(screen.getByRole("button", { name: "Снять с публикации" }));
   expect(await screen.findByText("Черновик")).toBeInTheDocument();
+  await user.click(
+    screen.getByRole("button", { name: "Редактировать Новый канал" }),
+  );
   await user.click(screen.getByLabelText("Опубликовать на сайте"));
   await user.click(screen.getByRole("button", { name: "Сохранить площадку" }));
   await screen.findByText("Площадка сохранена.");
-  await user.click(
-    screen.getByRole("button", { name: "Редактировать Новый канал" }),
-  );
-  await user.click(screen.getByRole("button", { name: "Новая площадка" }));
-  expect(screen.getByLabelText("Название площадки")).toHaveValue("");
-  await user.click(
-    screen.getByRole("button", { name: "Редактировать Новый канал" }),
-  );
   await user.click(screen.getByRole("button", { name: "Добавить площадку" }));
   expect(screen.getByLabelText("Название площадки")).toHaveValue("");
   expect(screen.getByLabelText("Название площадки")).toHaveFocus();
+  await user.click(screen.getByRole("button", { name: "Закрыть редактор" }));
   await user.click(screen.getByRole("button", { name: "Удалить Новый канал" }));
   await user.click(screen.getByRole("button", { name: /^Удалить$/ }));
   expect(
     await screen.findByText("Добавьте первую площадку."),
   ).toBeInTheDocument();
+});
+
+it("separates archived media, prevents creating or publishing there, and restores as a draft", async () => {
+  const archived = {
+    ...photo,
+    id: "archived",
+    title: "Архив другого региона",
+    published: false,
+    archived: true,
+  };
+  const data = { ...content, media: [photo, archived] };
+  mockApi((url, options) => {
+    if (!options?.method)
+      return url === "/api/admin/content" ? data : undefined;
+    if (url.endsWith("/archive")) archived.archived = false;
+    return { ok: true };
+  });
+  mount(<AdminPage />, "/admin?section=media", data, true);
+  expect(screen.queryByText(archived.title)).not.toBeInTheDocument();
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("tab", { name: "Архив" }));
+  expect(
+    screen.getByRole("button", { name: "Добавить материал" }),
+  ).toBeDisabled();
+  expect(
+    screen.queryByRole("button", { name: "Опубликовать" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: /Редактировать/ }),
+  ).not.toBeInTheDocument();
+  await user.click(
+    screen.getByRole("button", { name: "Восстановить материал" }),
+  );
+  await screen.findByText("Материал восстановлен как черновик.");
+  await user.click(screen.getByRole("tab", { name: "Материалы" }));
+  expect(screen.getByText(archived.title)).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Добавить материал" }),
+  ).toBeEnabled();
 });

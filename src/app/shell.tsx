@@ -1,3 +1,4 @@
+import { BrandLockup } from "../shared/ui/brand-lockup";
 import { LoginDialog } from "../features/editor-login";
 import { useQuery } from "@tanstack/react-query";
 import { loadContent } from "../shared/api";
@@ -67,12 +68,7 @@ export function App() {
               to="/"
               aria-label="Северный человек — главная"
             >
-              <span className="header-brand-name" aria-hidden="true">
-                Северный<span>человек</span>
-              </span>
-              <span className="header-brand-short" aria-hidden="true">
-                СЧ
-              </span>
+              <BrandLockup />
             </Link>
             <nav
               className={open ? "navigation open" : "navigation"}
@@ -154,8 +150,8 @@ export function App() {
                   Северный человек
                 </Link>
                 <p>
-                  Истории объединения, материалы из регионов и календарь событий
-                  — в одном пространстве.
+                  Истории Москвы и Подмосковья, материалы объединения и
+                  календарь событий — в одном пространстве.
                 </p>
               </div>
               <nav
@@ -191,7 +187,7 @@ export function App() {
             </div>
             <p className="footer-copyright">
               © {new Date().getFullYear()} · Информационный портал «Северный
-              человек»
+              человек» · Москва и Московская область
             </p>
           </div>
         </footer>

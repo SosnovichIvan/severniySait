@@ -1,9 +1,11 @@
-import { useRef, useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { PenLine, Plus, Trash2 } from "lucide-react";
+import { EditorDialog } from "../../../shared/ui/editor-dialog";
 import type { ChannelRecord } from "../../../../contracts/content";
 const blank = { name: "", note: "", short: "", url: "", published: false };
 type Props = {
   channels: ChannelRecord[];
+  notice?: ReactNode;
   pending: boolean;
   onSave: (
     channel: Omit<ChannelRecord, "id"> & { id?: string },
@@ -17,153 +19,145 @@ export function ChannelEditor({
   onSave,
   onPublication,
   onDelete,
+  notice,
 }: Props) {
   const [draft, setDraft] = useState<
-    Omit<ChannelRecord, "id"> & { id?: string }
-  >(blank);
-  const nameRef = useRef<HTMLInputElement>(null);
-  const editorRef = useRef<HTMLElement>(null);
+    (Omit<ChannelRecord, "id"> & { id?: string }) | null
+  >(null);
   function addChannel() {
-    setDraft(blank);
-    nameRef.current?.focus();
-    editorRef.current?.scrollIntoView({ block: "start" });
+    setDraft({ ...blank });
   }
   async function save(event: FormEvent) {
     event.preventDefault();
     try {
-      await onSave(draft);
-      setDraft(blank);
+      await onSave(draft!);
+      setDraft(null);
     } catch {
       /* The parent keeps the error notice; retain form input for retry. */
     }
   }
   return (
-    <div className="admin-grid">
+    <div className="admin-collection">
+      {!draft && notice}
       <section className="panel">
         <div className="channel-editor-heading">
           <h2>Площадки и каналы</h2>
           <button
-            className="button"
+            className="button primary add-entity"
+            aria-label="Добавить площадку"
+            title="Добавить площадку"
             type="button"
             disabled={pending}
             onClick={addChannel}
           >
-            <Plus size={16} /> Добавить площадку
+            <Plus size={18} />
           </button>
         </div>
         <p>Опубликованные ссылки появятся в футере и медиапространстве.</p>
-        {channels.map((channel) => (
-          <article className="admin-row" key={channel.id}>
-            <span className="publication">
-              {channel.published ? "Опубликовано" : "Черновик"}
-            </span>
-            <h3>{channel.name}</h3>
-            <p className="channel-address">{channel.url}</p>
-            <div className="row-actions">
-              <button
-                disabled={pending}
-                aria-label={`Редактировать ${channel.name}`}
-                onClick={() => setDraft(channel)}
-              >
-                <PenLine size={16} /> Редактировать
-              </button>
-              <button
-                disabled={pending}
-                onClick={async () => {
-                  try {
-                    await onPublication(channel);
-                    setDraft((current) =>
-                      current.id === channel.id
-                        ? { ...current, published: !channel.published }
-                        : current,
-                    );
-                  } catch {
-                    /* Retain the previous status and show the parent notice. */
-                  }
-                }}
-              >
-                {channel.published ? "Снять с публикации" : "Опубликовать"}
-              </button>
-              <button
-                disabled={pending}
-                aria-label={`Удалить ${channel.name}`}
-                onClick={() => onDelete(channel.id)}
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          </article>
-        ))}
+        <div className="admin-card-grid">
+          {channels.map((channel) => (
+            <article className="admin-row" key={channel.id}>
+              <span className="publication">
+                {channel.published ? "Опубликовано" : "Черновик"}
+              </span>
+              <h3>{channel.name}</h3>
+              <p className="channel-address">{channel.url}</p>
+              <div className="row-actions">
+                <button
+                  disabled={pending}
+                  aria-label={`Редактировать ${channel.name}`}
+                  onClick={() => setDraft(channel)}
+                >
+                  <PenLine size={16} /> Редактировать
+                </button>
+                <button
+                  disabled={pending}
+                  onClick={async () => {
+                    try {
+                      await onPublication(channel);
+                    } catch {
+                      /* Retain the previous status and show the parent notice. */
+                    }
+                  }}
+                >
+                  {channel.published ? "Снять с публикации" : "Опубликовать"}
+                </button>
+                <button
+                  disabled={pending}
+                  aria-label={`Удалить ${channel.name}`}
+                  onClick={() => onDelete(channel.id)}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
         {!channels.length && <p className="empty">Добавьте первую площадку.</p>}
       </section>
-      <section className="panel editor" ref={editorRef}>
-        <h2>{draft.id ? "Редактировать площадку" : "Новая площадка"}</h2>
-        <form onSubmit={save}>
-          <label>
-            Название площадки
-            <input
-              required
-              maxLength={100}
-              ref={nameRef}
-              value={draft.name}
-              onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-            />
-          </label>
-          <label>
-            Ссылка на площадку
-            <input
-              required
-              type="url"
-              maxLength={2000}
-              placeholder="https://…"
-              value={draft.url}
-              onChange={(e) => setDraft({ ...draft, url: e.target.value })}
-            />
-          </label>
-          <label>
-            Описание площадки
-            <textarea
-              maxLength={300}
-              rows={3}
-              value={draft.note}
-              onChange={(e) => setDraft({ ...draft, note: e.target.value })}
-            />
-          </label>
-          <label>
-            Короткое обозначение
-            <input
-              required
-              maxLength={4}
-              placeholder="TG"
-              value={draft.short}
-              onChange={(e) => setDraft({ ...draft, short: e.target.value })}
-            />
-          </label>
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={draft.published}
-              onChange={(e) =>
-                setDraft({ ...draft, published: e.target.checked })
-              }
-            />{" "}
-            Опубликовать на сайте
-          </label>
-          <button className="button primary" disabled={pending}>
-            {pending ? "Сохраняем…" : "Сохранить площадку"}
-          </button>
-          {draft.id && (
-            <button
-              className="button"
-              type="button"
-              disabled={pending}
-              onClick={addChannel}
-            >
-              <Plus size={16} /> Новая площадка
+      {draft && (
+        <EditorDialog
+          title={draft.id ? "Редактировать площадку" : "Новая площадка"}
+          busy={pending}
+          onClose={() => setDraft(null)}
+        >
+          {notice}
+          <form onSubmit={save}>
+            <label>
+              Название площадки
+              <input
+                required
+                maxLength={100}
+                value={draft.name}
+                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+              />
+            </label>
+            <label>
+              Ссылка на площадку
+              <input
+                required
+                type="url"
+                maxLength={2000}
+                placeholder="https://…"
+                value={draft.url}
+                onChange={(e) => setDraft({ ...draft, url: e.target.value })}
+              />
+            </label>
+            <label>
+              Описание площадки
+              <textarea
+                maxLength={300}
+                rows={3}
+                value={draft.note}
+                onChange={(e) => setDraft({ ...draft, note: e.target.value })}
+              />
+            </label>
+            <label>
+              Короткое обозначение
+              <input
+                required
+                maxLength={4}
+                placeholder="TG"
+                value={draft.short}
+                onChange={(e) => setDraft({ ...draft, short: e.target.value })}
+              />
+            </label>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={draft.published}
+                onChange={(e) =>
+                  setDraft({ ...draft, published: e.target.checked })
+                }
+              />{" "}
+              Опубликовать на сайте
+            </label>
+            <button className="button primary" disabled={pending}>
+              {pending ? "Сохраняем…" : "Сохранить площадку"}
             </button>
-          )}
-        </form>
-      </section>
+          </form>
+        </EditorDialog>
+      )}
     </div>
   );
 }

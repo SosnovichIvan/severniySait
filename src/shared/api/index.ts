@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { contentSchema } from "../../../contracts/content";
-export { default as divisions } from "../../../contracts/divisions.json";
 export async function request(path: string, options: RequestInit = {}) {
   const response = await fetch(path, options);
   const body: unknown = await response.json();
