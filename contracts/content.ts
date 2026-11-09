@@ -1,5 +1,4 @@
 import { z } from "zod";
-import divisionCatalog from "./divisions.json" with { type: "json" };
 const divisionUrl = z
   .string()
   .trim()
@@ -9,12 +8,11 @@ const divisionUrl = z
     "Укажите ссылку с http:// или https://",
   );
 export const divisionInput = z.object({
-  name: z
-    .string()
-    .refine(
-      (name) => divisionCatalog.some((division) => division.name === name),
-      "Неизвестное подразделение",
-    ),
+  name: z.string().trim().min(2).max(120),
+  id: z.string().min(1).max(200).optional(),
+  region: z.enum(["Москва", "Московская область", "Другой регион"]).optional(),
+  type: z.enum(["city", "district"]).optional(),
+  archived: z.boolean().optional(),
   url: divisionUrl,
   published: z.boolean().optional(),
   coordinator: z.string().trim().max(120).optional(),
@@ -31,6 +29,16 @@ export const divisionInput = z.object({
   website: divisionUrl.optional(),
 });
 export type DivisionLink = z.infer<typeof divisionInput>;
+export const divisionSaveInput = divisionInput
+  .omit({ id: true, archived: true })
+  .refine(
+    (division) =>
+      division.region !== "Другой регион" &&
+      !(
+        division.type === "district" && division.region === "Московская область"
+      ),
+    "Выберите Москву для округа или Московскую область для города.",
+  );
 export const channelInput = z.object({
   name: z.string().trim().min(1).max(100),
   note: z.string().trim().max(300),
@@ -63,6 +71,7 @@ export const mediaInput = z.object({
 });
 export const eventSchema = eventInput.extend({ id: z.string() });
 export const mediaSchema = mediaInput.extend({
+  archived: z.boolean().optional(),
   id: z.string(),
   url: z.string(),
   kind: z.enum(["image", "video"]),
@@ -102,9 +111,7 @@ export const contentTarget = z.object({
   id: z.string().min(1).max(200),
 });
 export type ContentTarget = z.infer<typeof contentTarget>;
-export const contentUpdateInput = deploymentInput.extend({
-  targets: z.array(contentTarget).min(1).max(100),
-});
+export const contentUpdateInput = deploymentInput.strict();
 export const contentUpdateSchema = deploymentSchema
   .omit({ version: true })
   .extend({ count: z.number().int().positive() });

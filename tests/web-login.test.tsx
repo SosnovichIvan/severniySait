@@ -144,7 +144,7 @@ it("opens the modal for a direct admin URL and returns home on cancel", async ()
   );
   expect(screen.getByTestId("path")).toHaveTextContent("/");
   expect(
-    screen.getByRole("heading", { name: "Северный человек" }),
+    screen.getByRole("heading", { name: /Северный человек/ }),
   ).toBeVisible();
 });
 it("recognizes an existing editor session", async () => {

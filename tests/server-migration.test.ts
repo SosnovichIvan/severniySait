@@ -34,6 +34,10 @@ it("upgrades a populated v1 archive without losing data and reopens safely", asy
       { version: 6 },
       { version: 7 },
       { version: 8 },
+      { version: 9 },
+      { version: 10 },
+      { version: 11 },
+      { version: 12 },
     ]);
     expect(store.list().media).toHaveLength(1);
     store.close();
@@ -52,7 +56,9 @@ it("upgrades v4 division links while retaining existing destinations", async () 
    CREATE TABLE division_links(name TEXT PRIMARY KEY,url TEXT NOT NULL);INSERT INTO division_links VALUES('Москва','https://example.org/moscow');`);
     old.close();
     let store = new Store(path);
-    expect(store.list(true).divisions).toEqual([
+    expect(
+      store.list(true).divisions.filter((d) => d.name === "Москва"),
+    ).toMatchObject([
       {
         name: "Москва",
         url: "https://example.org/moscow",
@@ -73,7 +79,9 @@ it("upgrades v4 division links while retaining existing destinations", async () 
     });
     store.close();
     store = new Store(path);
-    expect(store.list(true).divisions[0].coordinator).toBe("Иван");
+    expect(
+      store.list(true).divisions.find((d) => d.name === "Москва")?.coordinator,
+    ).toBe("Иван");
     expect(store.db.pragma("integrity_check", { simple: true })).toBe("ok");
     expect(store.db.pragma("foreign_key_check")).toEqual([]);
     store.close();

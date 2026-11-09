@@ -19,7 +19,7 @@ import {
   Handshake,
   Package,
 } from "lucide-react";
-import { loadContent, divisions } from "../../../shared/api";
+import { loadContent } from "../../../shared/api";
 
 export function PortalPage() {
   const path = useLocation().pathname;
@@ -57,13 +57,9 @@ export function PortalPage() {
         : path === "/calendar"
           ? "Календарь событий"
           : "Медиапространство";
-  const filtered = divisions
-    .map((division) => ({
-      name: division.name,
-      url:
-        data?.divisions?.find((link) => link.name === division.name)?.url ?? "",
-    }))
-    .filter((d) => d.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = (data?.divisions ?? []).filter((d) =>
+    d.name.toLowerCase().includes(search.toLowerCase()),
+  );
   const monthEvents =
     data?.events.filter((e) => {
       const d = getMoscowDate(new Date(e.startsAt));
@@ -98,13 +94,16 @@ export function PortalPage() {
           <section className="hero">
             <div className="hero-copy">
               <div className="hero-heading">
-                <h1 aria-label="Северный человек">
+                <h1 aria-label="Северный человек — Москва и Московская область">
                   Северный <span>человек</span>
+                  <small className="hero-region">
+                    Москва и Московская область
+                  </small>
                 </h1>
                 <p className="hero-statement">
-                  Наша сила — в единстве. Сохраняем русские традиции, развиваем
-                  спорт, воспитываем молодёжь, укрепляем устои общества и
-                  поддерживаем граждан.
+                  Наша сила — в единстве. Объединяем Москву и Подмосковье:
+                  сохраняем русские традиции, развиваем спорт, воспитываем
+                  молодёжь, укрепляем устои общества и поддерживаем граждан.
                 </p>
               </div>
               <img
@@ -120,8 +119,9 @@ export function PortalPage() {
               aria-label="Деятельность объединения"
             >
               <p className="about-intro">
-                Объединение основано в 2022 году и работает через региональные
-                подразделения. Основные направления, заявленные на его сайте:
+                Московское сообщество объединяет людей вокруг общих дел —
+                культуры, спорта, воспитания молодёжи и взаимной поддержки. Мы —
+                часть объединения, основанного Михаилом Маваши в 2022 году.
               </p>
               <dl className="activity-list">
                 <div>
@@ -290,11 +290,10 @@ export function PortalPage() {
                 <Search size={20} />
                 <input
                   aria-label="Найти город"
-                  placeholder="Найти свой город"
+                  placeholder="Найти округ или город"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
-                <span>{filtered.length}</span>
               </label>
               <div className="division-grid">
                 {filtered.map((d) =>
@@ -324,20 +323,12 @@ export function PortalPage() {
               </div>
               {!filtered.length && (
                 <p className="empty">
-                  Город не найден. Попробуйте другое название.
+                  Подразделение не найдено. Попробуйте другое название.
                 </p>
               )}
               <p className="source-note">
-                Источник каталога:{" "}
-                <a
-                  href="https://северныйчеловек.рф"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  северныйчеловек.рф
-                </a>{" "}
-                · проверено 08.11.2026. Актуальность контактов уточняйте в
-                региональном канале.
+                Округа Москвы и города Московской области. Контакты и состав
+                каталога обновляет редакция.
               </p>
             </>
           )}
@@ -578,11 +569,6 @@ function MediaCard({ item }: { item: MediaRecord }) {
         ) : (
           <img src={item.url} alt={item.title} loading="lazy" />
         )}
-        <span className="media-photo-count">
-          {item.kind === "video"
-            ? "Видео"
-            : `Кадров: ${1 + (item.images?.length ?? 0)}`}
-        </span>
       </Link>
       <p className="eyebrow">
         {item.eventDate ? (

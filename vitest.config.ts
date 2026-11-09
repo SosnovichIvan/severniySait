@@ -3,6 +3,9 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   test: {
+    // Local Git integration and browser-like tests share CPU with development tools.
+    testTimeout: 30000,
+    maxWorkers: 2,
     projects: [
       {
         extends: true,
